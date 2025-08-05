@@ -1,0 +1,252 @@
+local http = require('socket/http')
+local JSON = require('json')
+local ltn12 = require('ltn12')
+local socket = require('socket')
+local socketutil = require('socketutil')
+local _ = require('gettext')
+local util = require('util')
+local logger = require('logger')
+
+local Files = require('karakeep/shared/files')
+local Notification = require('karakeep/shared/widgets/notification')
+local Error = require('karakeep/shared/error')
+
+-- This is the main Http client that handles HTTP communication.
+--It provides convenient HTTP methods
+---@class HttpClient: HttpClientConfig
+local HttpClient = {}
+
+---@class HttpClientConfig
+---@field server_address string Server address for API calls
+---@field api_token string API token for authentication
+---@field api_base string API base URL (defaults to /v1)
+
+---@class ApiDialogConfig
+---@field loading? {text?: string, timeout?: number|nil} Loading notification (timeout=nil for manual close)
+---@field error? {text?: string, timeout?: number|nil} Error notification (defaults to 5s)
+---@field success? {text?: string, timeout?: number|nil} Success notification (defaults to 2s)
+
+---@class HttpClientOptions<Body, QueryParams>: {body?: Body, query?: QueryParams, dialogs?: ApiDialogConfig}
+
+---Create a new API instance
+---@param config HttpClientConfig Configuration table with server address and API token
+---@return HttpClient
+function HttpClient:new(config)
+    local instance = {}
+    setmetatable(instance, self)
+    self.__index = self
+
+    instance.server_address = config.server_address
+    instance.api_token = config.api_token
+    instance.api_base = config.api_base or '/v1'
+
+    logger.dbg('api_base:', instance.api_base)
+
+    return instance
+end
+
+---@class QueryParam
+---@field key string|number Parameter key
+---@field value string|number|table Parameter value
+
+---Add a URL-encoded query parameter to the query parts array
+---@param query_parts table Array to append the parameter to
+---@param query_param QueryParam Parameter to add
+local function addQueryParam(query_parts, query_param)
+    local key = query_param.key
+    local value = query_param.value
+    local encoded_key = util.urlEncode(tostring(key))
+    local encoded_value = util.urlEncode(tostring(value))
+    table.insert(query_parts, encoded_key .. '=' .. encoded_value)
+end
+
+---Build error message from HTTP response code and body
+---@param code number HTTP status code
+---@param response_text string Response body text
+---@return string Error message
+local function buildErrorMessage(code, response_text)
+    local api_error_message = nil
+    if response_text and response_text ~= '' then
+        local success, error_data = pcall(JSON.decode, response_text)
+        if success and error_data then
+            api_error_message = error_data
+        end
+    end
+
+    if code == 400 then
+        return api_error_message or _('Bad request')
+    elseif code == 401 then
+        return api_error_message or _('Unauthorized - please check your API token')
+    elseif code == 403 then
+        return api_error_message or _('Forbidden - access denied')
+    elseif code == 500 then
+        return api_error_message or _('Internal server error')
+    else
+        return api_error_message or (_('HTTP error: ') .. tostring(code))
+    end
+end
+
+---Make an HTTP request to the API with optional dialog support
+---@generic Body : table
+---@param method "GET"|"POST"|"PUT"|"DELETE" HTTP method to use
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration including body, query, and dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:makeRequest(method, endpoint, config)
+    config = config or {}
+    local dialogs = config.dialogs
+
+    local server_address = self.server_address
+    local api_token = self.api_token
+
+    if not server_address or not api_token or server_address == '' or api_token == '' then
+        if dialogs and dialogs.error then
+            local error_text = dialogs.error.text
+                or _('Server address and API token must be configured')
+            Notification:error(error_text, { timeout = dialogs.error.timeout })
+        end
+        return nil, Error.new(_('Server address and API token must be configured'))
+    end
+
+    local loading_notification
+    if dialogs and dialogs.loading and dialogs.loading.text then
+        loading_notification =
+            Notification:info(dialogs.loading.text, { timeout = dialogs.loading.timeout })
+    end
+
+    local base_url = Files.rtrimSlashes(server_address) .. self.api_base
+    local url = base_url .. endpoint
+
+    if config.query and next(config.query) then
+        local query_parts = {}
+        for key, value in pairs(config.query) do
+            if type(value) == 'table' then
+                for _, v in ipairs(value) do
+                    -- Arrays values are encoded as multiple parameters. E.g. {status = {'read', 'unread'}} -> ?status=read&status=unread
+                    addQueryParam(query_parts, { key = key, value = v })
+                end
+            else
+                -- Single values are encoded as a single parameter. E.g. {status = 'read'} -> ?status=read
+                addQueryParam(query_parts, { key = key, value = value })
+            end
+        end
+        url = url .. '?' .. table.concat(query_parts, '&')
+    end
+
+    local headers = {
+        ['Authorization'] = 'Bearer ' .. api_token,
+        ['Accept'] = 'application/json',
+        ['User-Agent'] = 'KOReader/1.0',
+    }
+
+    local response_body = {}
+    local request = {
+        url = url,
+        method = method,
+        headers = headers,
+        sink = socketutil.table_sink(response_body),
+    }
+
+    if config.body then
+        local request_body = JSON.encode(config.body)
+        request.source = ltn12.source.string(request_body)
+        headers['Content-Length'] = tostring(#request_body)
+        headers['Content-Type'] = 'application/json'
+    end
+
+    logger.dbg('[HttpClient] request:', config.body, JSON.encode(config.body), request)
+
+    socketutil:set_timeout(socketutil.LARGE_BLOCK_TIMEOUT, socketutil.LARGE_TOTAL_TIMEOUT)
+    local code, resp_headers, _status = socket.skip(1, http.request(request))
+    logger.dbg('[HttpClient]', method, url, '->', code or 'no response')
+    socketutil:reset_timeout()
+
+    if loading_notification then
+        loading_notification:close()
+    end
+    if resp_headers == nil then
+        local error_message = _('Network error occurred')
+        logger.err('[HttpClient] Network error:', method, url)
+        if dialogs and dialogs.error then
+            local error_text = dialogs.error.text or error_message
+            Notification:error(error_text, { timeout = dialogs.error.timeout })
+        end
+        return nil, Error.new(error_message)
+    end
+
+    local response_text = table.concat(response_body)
+
+    if code == 200 or code == 201 or code == 204 then
+        if dialogs and dialogs.success and dialogs.success.text then
+            Notification:success(dialogs.success.text, { timeout = dialogs.success.timeout })
+        end
+
+        if response_text and response_text ~= '' then
+            local success, data = pcall(JSON.decode, response_text)
+            if success then
+                return data, nil
+            else
+                local error_message = _('Invalid JSON response from server')
+                if dialogs and dialogs.error then
+                    local error_text = dialogs.error.text or error_message
+                    Notification:error(error_text, { timeout = dialogs.error.timeout })
+                end
+                return nil, Error.new(error_message)
+            end
+        else
+            return {}, nil
+        end
+    end
+
+    local error_message = buildErrorMessage(code, response_text)
+    logger.warn('[HttpClient] API error:', method, url, '->', code, error_message)
+
+    if dialogs and dialogs.error then
+        local error_text = dialogs.error.text or error_message
+        Notification:error(error_text, { timeout = dialogs.error.timeout })
+    end
+
+    return nil, Error.new(error_message)
+end
+
+---Make a GET request
+---@generic Body : nil
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:get(endpoint, config)
+    config = config or {}
+    return self:makeRequest('GET', endpoint, config)
+end
+
+---Make a POST request
+---@generic Body : table
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:post(endpoint, config)
+    config = config or {}
+    return self:makeRequest('POST', endpoint, config)
+end
+
+---Make a PUT request
+---@generic Body : table
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:put(endpoint, config)
+    config = config or {}
+    return self:makeRequest('PUT', endpoint, config)
+end
+
+---Make a DELETE request
+---@generic Body : nil
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:delete(endpoint, config)
+    config = config or {}
+    return self:makeRequest('DELETE', endpoint, config)
+end
+
+return HttpClient

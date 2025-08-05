@@ -1,0 +1,161 @@
+name: Create Release Artifact
+
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+  pull_request:
+    branches: [main, dev]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Set up Lua
+        uses: leafo/gh-actions-lua@v11
+        with:
+          luaVersion: "5.1"
+
+      - name: Set up LuaRocks
+        uses: leafo/gh-actions-luarocks@v4
+
+      - name: Set up Selene
+        uses: NTBBloodbath/selene-action@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --version
+
+      - name: Install dependencies
+        run: |
+          luarocks install luacheck
+
+      - name: Install StyLua
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --version
+
+      - name: Run linting
+        run: task lint
+
+      - name: Run formatting check
+        run: task fmt
+
+      - name: Type check with lua-language-server
+        uses: mrcjkb/lua-typecheck-action@v0
+        with:
+          configpath: ".luarc.json"
+          checklevel: "Error"
+
+      - name: Build release artifact
+        run: |
+          task build-optimized
+          echo "=== Checking build output ==="
+          ls -la
+          ls -la dist/ || echo "dist directory not found"
+          ls -la dist/karakeep.koplugin/ || echo "karakeep.koplugin directory not found"
+
+      - name: Create ZIP package
+        run: |
+          cd dist
+          zip -r karakeep.koplugin.zip karakeep.koplugin/
+          ls -la karakeep.koplugin.zip
+          echo "=== ZIP contents preview ==="
+          unzip -l karakeep.koplugin.zip | head -20
+
+      - name: Get version from _meta.lua
+        id: get_version
+        run: |
+          VERSION=$(grep -E "version = ['\"]([^'\"]*)['\"]" src/_meta.lua | sed -E "s/version = ['\"]([^'\"]*)['\"].*/\1/" | tr -d ' ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate tag matches version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          META_VERSION="${{ steps.get_version.outputs.version }}"
+
+          echo "🏷️  Tag version: $TAG_VERSION"
+          echo "📄 _meta.lua version: $META_VERSION"
+
+          if [ "$TAG_VERSION" != "$META_VERSION" ]; then
+            echo "❌ Version mismatch!"
+            echo "Tag version ($TAG_VERSION) does not match _meta.lua version ($META_VERSION)"
+            echo "Please update src/_meta.lua or use the correct tag"
+            exit 1
+          fi
+
+          echo "✅ Version validation passed"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: karakeep-koplugin-v${{ steps.get_version.outputs.version }}
+          path: dist/
+          retention-days: 90
+
+      - name: Create Release (main branch)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: |
+            Automated release of karakeep.koplugin v${{ steps.get_version.outputs.version }}
+
+            **Changes:**
+            - Built from commit: ${{ github.sha }}
+            - Branch: ${{ github.ref_name }}
+
+            **Installation:**
+            1. Download the artifact zip file
+            2. Extract it to your KOReader plugins directory
+            3. Restart KOReader and enable the plugin
+          files: dist/karakeep.koplugin.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pre-Release (dev branch)
+        if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}-dev
+          name: Pre-Release v${{ steps.get_version.outputs.version }}-dev
+          body: |
+            Automated pre-release of karakeep.koplugin v${{ steps.get_version.outputs.version }}-dev
+
+            ⚠️ **This is a development pre-release** - Use at your own risk!
+
+            **Changes:**
+            - Built from commit: ${{ github.sha }}
+            - Branch: ${{ github.ref_name }}
+
+            **Installation:**
+            1. Download the artifact zip file
+            2. Extract it to your KOReader plugins directory
+            3. Restart KOReader and enable the plugin
+          files: dist/karakeep.koplugin.zip
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
