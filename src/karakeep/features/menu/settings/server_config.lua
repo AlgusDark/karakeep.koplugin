@@ -46,7 +46,7 @@ local function showDialog(settings)
                         end
 
                         -- Broadcast server config change event
-                        EventManager.broadcast('SettingsChange', {
+                        EventManager.broadcast('ServerConfigChange', {
                             api_token = settings.api_token,
                             server_address = settings.server_address,
                         })

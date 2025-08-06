@@ -4,10 +4,9 @@ local logger = require('logger')
 local _ = require('gettext')
 
 local Notification = require('karakeep/shared/widgets/notification')
-
 ---@class KarakeepBookmark : EventListener
----@field api KarakeepAPI
-local KarakeepBookmark = EventListener:extend {}
+---@field ui UI
+local KarakeepBookmark = EventListener:extend({})
 
 ---@param link_url string
 function KarakeepBookmark:onCreateNewKarakeepBookmark(link_url)
@@ -17,11 +16,11 @@ function KarakeepBookmark:onCreateNewKarakeepBookmark(link_url)
         return
     end
 
-    local result, error = self.api:createNewBookmark({
+    local result, error = self.ui.karakeep_api:createNewBookmark({
         body = {
             type = 'link',
             url = link_url,
-        }
+        },
     })
 
     logger.dbg('[Karakeep:Bookmark] Creating new bookmark', result, error)

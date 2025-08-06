@@ -5,21 +5,18 @@ local Device = require('device')
 
 local EventManager = require('karakeep/shared/event_manager')
 
----@class ReaderLink : EventListener
+---@class KarakeepReaderLink : EventListener
 ---@field ui {link: table} # ReaderUI
-local ReaderLink = EventListener:extend({})
+local KarakeepReaderLink = EventListener:extend({})
 
-function ReaderLink:init()
+function KarakeepReaderLink:init()
     if self.ui.link then
         self.ui.link:addToExternalLinkDialog('50_create_bookmark', function(this, link_url)
             return {
                 text = _('Create new bookmark'),
                 callback = function()
                     UIManager:close(this.external_link_dialog)
-                    EventManager.broadcast(
-                        'CreateNewKarakeepBookmark',
-                        link_url
-                    )
+                    EventManager.broadcast('CreateNewKarakeepBookmark', link_url)
                 end,
                 show_in_dialog_func = function()
                     if Device:canOpenLink() then
@@ -31,4 +28,4 @@ function ReaderLink:init()
     end
 end
 
-return ReaderLink
+return KarakeepReaderLink

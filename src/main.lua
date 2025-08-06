@@ -2,13 +2,27 @@ local WidgetContainer = require('ui/widget/container/widgetcontainer')
 local _ = require('gettext')
 local logger = require('logger')
 
-local ReaderLink = require('karakeep/features/reader/modules/readerlink')
+local KarakeepReaderLink = require('karakeep/features/reader/modules/readerlink')
 local Settings = require('karakeep/shared/karakeep_settings')
 local getMainMenu = require('karakeep/features/menu/main_menu')
-local KarakeepAPI = require('karakeep/api/karakeep_client')
+local KarakeepAPI = require('src.karakeep.api.karakeep_api')
 local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 
+---Augment UI interface with registered Karakeep modules
+---@class UI : WidgetContainer
+---@field karakeep_api KarakeepAPI
+---@field karakeep_bookmark KarakeepBookmark
+---@field karakeep_link KarakeepReaderLink
+
 ---@class Karakeep : WidgetContainer
+---@field name string Plugin internal name (from _meta.lua)
+---@field fullname string Plugin display name (from _meta.lua)
+---@field description string Plugin description (from _meta.lua)
+---@field version string Plugin version (from _meta.lua)
+---@field author string Plugin author (from _meta.lua)
+---@field repo_owner string GitHub repository owner (from _meta.lua)
+---@field repo_name string GitHub repository name (from _meta.lua)
+---@field settings Settings Plugin settings instance
 local Karakeep = WidgetContainer:extend({
     name = 'Karakeep',
     is_doc_only = false,
@@ -19,26 +33,29 @@ function Karakeep:init()
         defaults = {
             server_address = 'https://karakeep.com',
             api_token = '',
+            include_beta_releases = false,
         },
     })
 
-    self.api = KarakeepAPI:new({
-        server_address = self.settings.server_address,
-        api_token = self.settings.api_token,
-        api_base = '/api/v1',
-    })
-
     self.ui:registerModule(
-        'karakeepbookmark',
-        KarakeepBookmark:new({
-            ui = self.ui,
-            api = self.api,
+        'karakeep_api',
+        KarakeepAPI:new({
+            server_address = self.settings.server_address,
+            api_token = self.settings.api_token,
+            api_base = '/api/v1',
         })
     )
 
     self.ui:registerModule(
-        'karakeeplink',
-        ReaderLink:new({
+        'karakeep_bookmark',
+        KarakeepBookmark:new({
+            ui = self.ui,
+        })
+    )
+
+    self.ui:registerModule(
+        'karakeep_link',
+        KarakeepReaderLink:new({
             ui = self.ui,
         })
     )

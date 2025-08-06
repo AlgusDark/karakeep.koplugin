@@ -1,9 +1,21 @@
 local _ = require('gettext')
 
+---@class PluginMeta
+---@field name string Plugin internal name
+---@field fullname string Plugin display name
+---@field description string Plugin description
+---@field version string Plugin version (semantic versioning)
+---@field author string Plugin author
+---@field repo_owner string GitHub repository owner
+---@field repo_name string GitHub repository name
+
+---@type PluginMeta
 return {
     name = 'karakeep',
     fullname = _('Karakeep'),
     description = _([[Read and bookmark links in your Karakeep instance.]]),
     version = '0.0.1',
     author = 'Algus Dark',
+    repo_owner = 'AlgusDark',
+    repo_name = 'karakeep.koplugin',
 }
