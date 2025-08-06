@@ -4,6 +4,7 @@ local logger = require('logger')
 local _ = require('gettext')
 
 local Notification = require('karakeep/shared/widgets/notification')
+local EventManager = require('karakeep/shared/event_manager')
 ---@class KarakeepBookmark : EventListener
 ---@field ui UI
 local KarakeepBookmark = EventListener:extend({})
@@ -11,7 +12,7 @@ local KarakeepBookmark = EventListener:extend({})
 ---@param link_url string
 function KarakeepBookmark:onCreateNewKarakeepBookmark(link_url)
     if not NetworkMgr:isOnline() then
-        -- Add to Offline queue
+        EventManager.broadcast('QueueBookmarkLink', { url = link_url })
         Notification:info(_('Link will be bookmarked to Karakeep in the next sync.'))
         return
     end
@@ -26,7 +27,9 @@ function KarakeepBookmark:onCreateNewKarakeepBookmark(link_url)
     logger.dbg('[Karakeep:Bookmark] Creating new bookmark', result, error)
 
     if not result then
-        return Notification:error(_('Failed to bookmark link to Karakeep.'))
+        -- API failed - queue for later sync
+        EventManager.broadcast('QueueBookmarkLink', { url = link_url })
+        return Notification:info(_('Link will be bookmarked to Karakeep in the next sync.'))
     end
 
     return Notification:success(_('Link bookmarked to Karakeep.'))

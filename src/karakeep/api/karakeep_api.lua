@@ -68,7 +68,14 @@ end
 ---@field text string
 ---@field sourceUrl? string
 
----@alias Bookmark BookmarkLink | BookmarkText
+---@class BookmarkAsset : BookmarkBase
+---@field type 'asset'
+---@field assetType 'image' | 'pdf'
+---@field assetId string
+---@field fileName? string
+---@field sourceUrl? string
+
+---@alias Bookmark BookmarkLink | BookmarkText | BookmarkAsset
 
 ---Create a new bookmark
 ---@param config HttpClientOptions<Bookmark, QueryParam[]>

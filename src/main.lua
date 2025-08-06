@@ -1,18 +1,23 @@
 local WidgetContainer = require('ui/widget/container/widgetcontainer')
 local _ = require('gettext')
 local logger = require('logger')
+local lfs = require('libs/libkoreader-lfs')
+local DataStorage = require('datastorage')
 
 local KarakeepReaderLink = require('karakeep/features/reader/modules/readerlink')
 local Settings = require('karakeep/shared/karakeep_settings')
 local getMainMenu = require('karakeep/features/menu/main_menu')
-local KarakeepAPI = require('src.karakeep.api.karakeep_api')
+local KarakeepAPI = require('karakeep/api/karakeep_api')
 local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
+local QueueManager = require('karakeep/features/queue/queue_manager')
+local SyncService = require('karakeep/features/sync/sync_service')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
 ---@field karakeep_api KarakeepAPI
 ---@field karakeep_bookmark KarakeepBookmark
 ---@field karakeep_link KarakeepReaderLink
+---@field karakeep_queue_manager QueueManager
 
 ---@class Karakeep : WidgetContainer
 ---@field name string Plugin internal name (from _meta.lua)
@@ -23,12 +28,23 @@ local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 ---@field repo_owner string GitHub repository owner (from _meta.lua)
 ---@field repo_name string GitHub repository name (from _meta.lua)
 ---@field settings Settings Plugin settings instance
+---@field data_dir string Full path to karakeep data directory
 local Karakeep = WidgetContainer:extend({
     name = 'Karakeep',
     is_doc_only = false,
+    data_dir = ('%s/%s/'):format(DataStorage:getFullDataDir(), 'karakeep'),
 })
 
 function Karakeep:init()
+    -- Create the karakeep directory if it doesn't exist
+    if not lfs.attributes(self.data_dir, 'mode') then
+        local success = lfs.mkdir(self.data_dir)
+        if not success then
+            logger.err('[Karakeep:Main] Failed to create data directory')
+            return
+        end
+    end
+
     self.settings = Settings:new({
         defaults = {
             server_address = 'https://karakeep.com',
@@ -46,6 +62,15 @@ function Karakeep:init()
         })
     )
 
+    -- Register queue manager as EventListener module (after API)
+    self.ui:registerModule(
+        'karakeep_queue_manager',
+        QueueManager:new({
+            data_dir = self.data_dir,
+            ui = self.ui,
+        })
+    )
+
     self.ui:registerModule(
         'karakeep_bookmark',
         KarakeepBookmark:new({
@@ -56,6 +81,13 @@ function Karakeep:init()
     self.ui:registerModule(
         'karakeep_link',
         KarakeepReaderLink:new({
+            ui = self.ui,
+        })
+    )
+
+    self.ui:registerModule(
+        'karakeep_sync_service',
+        SyncService:new({
             ui = self.ui,
         })
     )
