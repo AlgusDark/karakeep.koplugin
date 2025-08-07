@@ -47,7 +47,7 @@ function Karakeep:init()
 
     self.settings = Settings:new({
         defaults = {
-            server_address = 'https://karakeep.com',
+            server_address = '',
             api_token = '',
             include_beta_releases = false,
         },
