@@ -11,9 +11,9 @@ local KarakeepReaderLink = EventListener:extend({})
 
 function KarakeepReaderLink:init()
     if self.ui.link then
-        self.ui.link:addToExternalLinkDialog('50_create_bookmark', function(this, link_url)
+        self.ui.link:addToExternalLinkDialog('50_save_to_karakeep', function(this, link_url)
             return {
-                text = _('Create new bookmark'),
+                text = _('Save to Karakeep'),
                 callback = function()
                     UIManager:close(this.external_link_dialog)
                     EventManager.broadcast('CreateNewKarakeepBookmark', link_url)
