@@ -8,6 +8,7 @@ local SyncMenu = require('karakeep/features/sync/sync_menu')
 return function(karakeep)
     local menu_items = {
         text = _('Karakeep'),
+        sorting_hint = 'tools',
         sub_item_table = {
             {
                 text = _('Settings'),
