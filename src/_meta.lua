@@ -14,7 +14,7 @@ return {
     name = 'karakeep',
     fullname = _('Karakeep'),
     description = _([[Read and bookmark links in your Karakeep instance.]]),
-    version = '0.0.1',
+    version = '0.0.2',
     author = 'Algus Dark',
     repo_owner = 'AlgusDark',
     repo_name = 'karakeep.koplugin',
