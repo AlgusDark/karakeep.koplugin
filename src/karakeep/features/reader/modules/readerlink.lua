@@ -1,7 +1,6 @@
 local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 local EventListener = require('ui/widget/eventlistener')
-local Device = require('device')
 
 local EventManager = require('karakeep/shared/event_manager')
 
@@ -17,11 +16,6 @@ function KarakeepReaderLink:init()
                 callback = function()
                     UIManager:close(this.external_link_dialog)
                     EventManager.broadcast('CreateNewKarakeepBookmark', link_url)
-                end,
-                show_in_dialog_func = function()
-                    if Device:canOpenLink() then
-                        return true
-                    end
                 end,
             }
         end)
