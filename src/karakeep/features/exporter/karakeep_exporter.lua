@@ -27,16 +27,24 @@ local Notification = require('karakeep/shared/widgets/notification')
 ---@field ui UI Reference to UI for accessing registered modules
 local KarakeepExporter = {}
 
+KarakeepExporter.__index = KarakeepExporter
+setmetatable(KarakeepExporter, { __index = BaseExporter }) -- inherit from BaseExporter
+
 ---Create a new exporter instance with UI dependency injection
 ---@param config {ui: UI} Configuration with UI reference
 ---@return table exporter_instance The configured exporter instance
 function KarakeepExporter:new(config)
+    -- create a BaseExporter instance
     local instance = BaseExporter:new({
         name = 'karakeep',
         label = 'karakeep',
         is_remote = true,
     })
-    setmetatable(instance, { __index = self })
+
+    -- set its metatable so it looks up in KarakeepExporter first, then BaseExporter
+    setmetatable(instance, { __index = KarakeepExporter })
+
+    -- add new fields
     instance.ui = config.ui
     return instance
 end
