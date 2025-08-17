@@ -84,4 +84,12 @@ function KarakeepAPI:createNewBookmark(config)
     return self.api_client:post('/bookmarks', config)
 end
 
+---Update an existing bookmark
+---@param bookmark_id string The bookmark ID to update
+---@param config HttpClientOptions<Bookmark, QueryParam[]>
+---@return table|nil result, Error|nil error
+function KarakeepAPI:updateBookmark(bookmark_id, config)
+    return self.api_client:patch('/bookmarks/' .. bookmark_id, config)
+end
+
 return KarakeepAPI

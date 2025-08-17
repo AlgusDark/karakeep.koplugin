@@ -11,6 +11,7 @@ local KarakeepAPI = require('karakeep/api/karakeep_api')
 local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local QueueManager = require('karakeep/features/queue/queue_manager')
 local SyncService = require('karakeep/features/sync/sync_service')
+local KarakeepProvider = require('karakeep/features/exporter/karakeep_provider')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
@@ -88,6 +89,13 @@ function Karakeep:init()
     self.ui:registerModule(
         'karakeep_sync_service',
         SyncService:new({
+            ui = self.ui,
+        })
+    )
+
+    self.ui:registerModule(
+        'karakeep_provider',
+        KarakeepProvider:new({
             ui = self.ui,
         })
     )
