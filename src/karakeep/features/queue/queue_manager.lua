@@ -35,14 +35,14 @@ function QueueManager:init()
 end
 
 ---Queue a bookmark for creation with strong typing
----@param payload Bookmark Bookmark payload (currently only BookmarkLink supported)
+---@param payload BookmarkRequest Bookmark payload (currently only BookmarkRequestLink supported)
 function QueueManager:queueCreateBookmark(payload)
     logger.dbg('[QueueManager] Queuing bookmark creation', payload.type)
 
     local key, data
 
     if payload.type == 'link' then
-        ---@cast payload BookmarkLink
+        ---@cast payload BookmarkRequestLink
         key = payload.url
 
         -- Always required properties
@@ -73,8 +73,8 @@ function QueueManager:queueCreateBookmark(payload)
         if payload.summary and payload.summary ~= '' then
             data.summary = payload.summary
         end
-        if payload.created_at and payload.created_at ~= '' then
-            data.created_at = payload.created_at
+        if payload.createdAt and payload.createdAt ~= '' then
+            data.createdAt = payload.createdAt
         end
         if payload.crawlPriority and payload.crawlPriority ~= '' then
             data.crawlPriority = payload.crawlPriority
@@ -146,7 +146,7 @@ end
 function QueueManager:onQueueBookmarkLink(payload)
     logger.dbg('[QueueManager] Received queue bookmark link event', payload.url)
 
-    -- Convert to BookmarkLink format
+    -- Convert to BookmarkRequestLink format
     local bookmark_payload = {
         type = 'link',
         url = payload.url,

@@ -49,36 +49,90 @@ end
 
 ---@alias CrawlPriority 'low' | 'normal'
 
----@class BookmarkBase
+---@class BookmarkRequestBase
 ---@field title? string
 ---@field archived? boolean
 ---@field favourited? boolean
 ---@field note? string
 ---@field summary? string
----@field created_at? string
+---@field createdAt? string
 ---@field crawlPriority? CrawlPriority
 
----@class BookmarkLink : BookmarkBase
+---@class BookmarkRequestLink : BookmarkRequestBase
 ---@field type 'link'
 ---@field url string
 ---@field precrawledArchiveId? number
 
----@class BookmarkText : BookmarkBase
+---@class BookmarkRequestText : BookmarkRequestBase
 ---@field type 'text'
 ---@field text string
 ---@field sourceUrl? string
 
----@class BookmarkAsset : BookmarkBase
+---@class BookmarkRequestAsset : BookmarkRequestBase
 ---@field type 'asset'
 ---@field assetType 'image' | 'pdf'
 ---@field assetId string
 ---@field fileName? string
 ---@field sourceUrl? string
 
----@alias Bookmark BookmarkLink | BookmarkText | BookmarkAsset
+---@class BookmarkContentLink
+---@field type 'link'
+---@field url string
+---@field title string|nil
+---@field description string|nil
+---@field imageUrl string|nil
+---@field imageAssetId string|nil
+---@field screenshotAssetId string|nil
+---@field fullPageArchiveAssetId string|nil
+---@field precrawledArchiveAssetId string|nil
+---@field videoAssetId string|nil
+---@field favicon string|nil
+---@field htmlContent string|nil
+---@field contentAssetId string|nil
+---@field crawledAt string|nil
+---@field author string|nil
+---@field publisher string|nil
+---@field datePublished string|nil
+---@field dateModified string|nil
+
+---@class BookmarkContentText
+---@field type 'text'
+---@field text string
+---@field sourceUrl string|nil
+
+---@class BookmarkContentAsset
+---@field type 'asset'
+---@field assetType 'image'|'pdf'
+---@field assetId string
+---@field fileName string|nil
+---@field sourceUrl string|nil
+---@field size number|nil
+---@field content string|nil
+
+---@class BookmarkContentUnknown
+---@field type 'unknown'
+
+---@alias BookmarkContent BookmarkContentLink | BookmarkContentText | BookmarkContentAsset | BookmarkContentUnknown
+
+---@class BookmarkResponse
+---@field id string
+---@field createdAt string
+---@field modifiedAt string|nil
+---@field title string|nil
+---@field archived boolean
+---@field favourited boolean
+---@field taggingStatus "success"|"failure"|"pending"|nil
+---@field summarizationStatus "success"|"failure"|"pending"|nil
+---@field note string|nil
+---@field summary string|nil
+---@field tags table[] Array of tag objects
+---@field content BookmarkContent Content object with type-specific fields
+---@field assets table[] Array of asset objects
+
+---@alias BookmarkRequest BookmarkRequestLink | BookmarkRequestText | BookmarkRequestAsset
 
 ---Create a new bookmark
----@param config HttpClientOptions<Bookmark, QueryParam[]>
+---@param config HttpClientOptions<BookmarkRequest, QueryParam[]>
 ---@return table|nil result, Error|nil error
 function KarakeepAPI:createNewBookmark(config)
     return self.api_client:post('/bookmarks', config)
@@ -86,7 +140,7 @@ end
 
 ---Update an existing bookmark
 ---@param bookmark_id string The bookmark ID to update
----@param config HttpClientOptions<Bookmark, QueryParam[]>
+---@param config HttpClientOptions<BookmarkRequest, QueryParam[]>
 ---@return table|nil result, Error|nil error
 function KarakeepAPI:updateBookmark(bookmark_id, config)
     return self.api_client:patch('/bookmarks/' .. bookmark_id, config)
