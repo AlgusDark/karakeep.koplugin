@@ -34,17 +34,12 @@ setmetatable(KarakeepExporter, { __index = BaseExporter }) -- inherit from BaseE
 ---@param config {ui: UI} Configuration with UI reference
 ---@return table exporter_instance The configured exporter instance
 function KarakeepExporter:new(config)
-    -- create a BaseExporter instance
-    local instance = BaseExporter:new({
+    local instance = BaseExporter.new(self, {
         name = 'karakeep',
         label = 'karakeep',
         is_remote = true,
     })
 
-    -- set its metatable so it looks up in KarakeepExporter first, then BaseExporter
-    setmetatable(instance, { __index = KarakeepExporter })
-
-    -- add new fields
     instance.ui = config.ui
     return instance
 end

@@ -1,5 +1,5 @@
 local EventListener = require('ui/widget/eventlistener')
-local ButtonDialogTitle = require('ui/widget/buttondialogtitle')
+local ButtonDialog = require('ui/widget/buttondialog')
 local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 local T = require('ffi/util').template
@@ -26,7 +26,7 @@ function SyncService:showSyncDialog()
         or T(_('Sync %1 pending bookmarks?'), bookmark_count)
 
     local sync_dialog
-    sync_dialog = ButtonDialogTitle:new({
+    sync_dialog = ButtonDialog:new({
         title = message,
         title_align = 'center',
         buttons = {
