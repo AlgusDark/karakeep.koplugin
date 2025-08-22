@@ -1,96 +1,51 @@
-name: CI and Release
+name: Release
 
 on:
   push:
-    branches: [main]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-  pull_request:
-    branches: [main]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  validate:
+  release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate tag matches meta version
+        id: validate
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          META_VERSION=$(grep -E "version = ['\"]([^'\"]*)['\"]" src/_meta.lua | sed -E "s/version = ['\"]([^'\"]*)['\"].*/\1/" | tr -d ' ')
+          
+          echo "🏷️  Tag version: $TAG_VERSION"
+          echo "📄 Meta version: $META_VERSION"
+          
+          if [ "$TAG_VERSION" != "$META_VERSION" ]; then
+            echo "❌ Version mismatch!"
+            echo "Tag version ($TAG_VERSION) doesn't match _meta.lua version ($META_VERSION)"
+            exit 1
+          fi
+          
+          echo "✅ Version validation passed"
+          echo "version=$META_VERSION" >> $GITHUB_OUTPUT
+
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
           version: 3.x
 
-      - name: Set up Lua
-        uses: leafo/gh-actions-lua@v11
-        with:
-          luaVersion: "5.1"
-
-      - name: Set up Selene
-        uses: NTBBloodbath/selene-action@v1.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --version
-
-      - name: Install StyLua
-        uses: JohnnyMorganz/stylua-action@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          version: latest
-          args: --version
-
-      - name: Run linting
-        run: task lint
-
-      - name: Run formatting check
-        run: task fmt
-
-      - name: Type check with lua-language-server
-        uses: mrcjkb/lua-typecheck-action@v0
-        with:
-          configpath: ".luarc.json"
-          checklevel: "Error"
-
-      - name: Check if version changed
-        if: github.event_name == 'push'
-        id: version_check
-        run: |
-          # Get current version
-          CURRENT_VERSION=$(grep -E "version = ['\"]([^'\"]*)['\"]" src/_meta.lua | sed -E "s/version = ['\"]([^'\"]*)['\"].*/\1/" | tr -d ' ')
-          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          
-          # Check if this commit changed the version
-          if git diff HEAD~1 HEAD --name-only | grep -q "src/_meta.lua"; then
-            if git diff HEAD~1 HEAD src/_meta.lua | grep -q "version = "; then
-              echo "version_changed=true" >> $GITHUB_OUTPUT
-              echo "Version changed to $CURRENT_VERSION"
-            else
-              echo "version_changed=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "version_changed=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Install git-cliff for changelog
-        if: github.event_name == 'push' && steps.version_check.outputs.version_changed == 'true'
         uses: kenji-miyake/setup-git-cliff@v2
 
-      - name: Create tag and release
-        if: github.event_name == 'push' && steps.version_check.outputs.version_changed == 'true'
+      - name: Build and create release
         run: |
-          VERSION="${{ steps.version_check.outputs.current_version }}"
+          VERSION="${{ steps.validate.outputs.version }}"
           TAG_NAME="v$VERSION"
-          
-          # Create and push tag
-          git tag "$TAG_NAME"
-          git push origin "$TAG_NAME"
           
           # Build release artifact
           task build-optimized

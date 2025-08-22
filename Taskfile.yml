@@ -249,11 +249,10 @@ tasks:
         CURRENT_BRANCH=$(git branch --show-current)
         echo "This will:"
         echo "  • Run all quality checks (lint, format, LSP)"
-        echo "  • Create release branch: release/v$NEW_VERSION"
         echo "  • Update src/_meta.lua version to $NEW_VERSION"
         echo "  • Create commit: 'chore: bump version to $NEW_VERSION'"
-        echo "  • Push release branch and create PR to main"
-        echo "  • When PR is merged, GitHub Actions will create tag and release"
+        echo "  • Create and push tag v$NEW_VERSION"
+        echo "  • GitHub Actions will create release automatically"
         echo ""
 
         # Handle dry run
@@ -312,10 +311,10 @@ tasks:
           NEW_VERSION="$major.$minor.$patch"
         fi
 
-        # Create release branch
-        RELEASE_BRANCH="release/v$NEW_VERSION"
-        echo "🌿 Creating release branch: $RELEASE_BRANCH"
-        git checkout -b "$RELEASE_BRANCH"
+        # Ensure we're on main branch
+        echo "🌿 Ensuring we're on main branch..."
+        git checkout main
+        git pull origin main
 
         # Update _meta.lua
         echo "📝 Updating src/_meta.lua to $NEW_VERSION..."
@@ -327,25 +326,28 @@ tasks:
         git add src/_meta.lua
         git commit -m "chore: bump version to $NEW_VERSION"
 
-        # Push release branch
-        echo "📤 Pushing release branch: $RELEASE_BRANCH"
-        git push -u origin "$RELEASE_BRANCH"
+        # Push to main
+        echo "📤 Pushing to main branch..."
+        git push origin main
 
-        # Create manual PR instructions
-        echo "🔄 Release branch ready for PR creation..."
-        CURRENT_VERSION=$(grep -o "version = '[^']*'" src/_meta.lua | sed "s/version = '\(.*\)'/\1/")
+        # Create and push tag
+        TAG_NAME="v$NEW_VERSION"
+        echo "🏷️  Creating tag: $TAG_NAME"
+        git tag "$TAG_NAME"
+        git push origin "$TAG_NAME"
 
         echo ""
-        echo "✅ Release branch created successfully!"
+        echo "✅ Release completed successfully!"
         echo "📝 Version updated to: $NEW_VERSION"
-        echo "🌿 Branch: $RELEASE_BRANCH"
+        echo "🏷️  Tag created: $TAG_NAME"
+        echo "📤 Changes pushed to main branch"
         echo ""
-        echo "📋 Next steps:"
-        echo "  1. Create PR: $RELEASE_BRANCH → main"
-        echo "     🔗 https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/compare/main...$RELEASE_BRANCH"
-        echo "  2. Merge the PR to main branch"  
-        echo "  3. GitHub Actions will auto-create tag and release"
-        echo "  4. Dev will auto-sync with main via GitHub Actions"
+        echo "📋 What happens next:"
+        echo "  1. GitHub Actions will detect the new tag"
+        echo "  2. Automatically build and create release"
+        echo "  3. Dev branch will auto-sync with main"
+        echo ""
+        echo "🔗 Monitor release creation: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/actions"
 
   sync-dev:
     desc: "Sync dev branch with main branch"
