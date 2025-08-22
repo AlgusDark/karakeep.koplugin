@@ -18,7 +18,7 @@ end
 
 ---@class BookmarkQueueItem
 ---@field action 'create'|'update'|'delete' Action type
----@field data Bookmark The bookmark data
+---@field data BookmarkRequest The bookmark data
 
 ---Add a bookmark action to the queue
 ---@param key string Unique identifier (URL for create, ID for update/delete)
@@ -132,7 +132,7 @@ function BookmarkQueue:processAll()
 end
 
 ---@class BookmarkQueuePayload
----@field data Bookmark
+---@field data BookmarkRequest
 
 ---Process create bookmark action by calling API directly
 ---@param key string URL key

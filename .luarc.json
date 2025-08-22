@@ -1,0 +1,9 @@
+{
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.diagnostics.globals": [
+        "G_reader_settings"
+    ],
+    "Lua.workspace.library": [
+        "typedefs"
+    ]
+}
