@@ -39,6 +39,11 @@ jobs:
         with:
           version: 3.x
 
+      - name: Set up Lua
+        uses: leafo/gh-actions-lua@v11
+        with:
+          luaVersion: "5.1"
+
       - name: Install git-cliff for changelog
         uses: kenji-miyake/setup-git-cliff@v2
 
