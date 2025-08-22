@@ -3,6 +3,7 @@ local _ = require('gettext')
 local logger = require('logger')
 local lfs = require('libs/libkoreader-lfs')
 local DataStorage = require('datastorage')
+local Provider = require('provider')
 
 local KarakeepReaderLink = require('karakeep/features/reader/modules/readerlink')
 local Settings = require('karakeep/shared/karakeep_settings')
@@ -11,6 +12,7 @@ local KarakeepAPI = require('karakeep/api/karakeep_api')
 local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local QueueManager = require('karakeep/features/queue/queue_manager')
 local SyncService = require('karakeep/features/sync/sync_service')
+local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
@@ -91,6 +93,8 @@ function Karakeep:init()
             ui = self.ui,
         })
     )
+
+    Provider:register('exporter', 'karakeep', KarakeepExporter:new({ ui = self.ui }))
 
     self.ui.menu:registerToMainMenu(self)
 end

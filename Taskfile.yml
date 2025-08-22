@@ -331,11 +331,26 @@ tasks:
         echo "📤 Pushing release branch: $RELEASE_BRANCH"
         git push -u origin "$RELEASE_BRANCH"
 
+        # Generate changelog using git-cliff
+        echo "📝 Generating changelog..."
+        CHANGELOG=$(git-cliff --tag "v$NEW_VERSION" --strip header || echo "No changelog generated")
+
         # Create PR using GitHub CLI
         echo "🔄 Creating Pull Request..."
+        CURRENT_VERSION=$(grep -o "version = '[^']*'" src/_meta.lua | sed "s/version = '\(.*\)'/\1/")
         gh pr create \
           --title "Release v$NEW_VERSION" \
-          --body "Automated version bump to $NEW_VERSION from release task. Ready for release to dev branch." \
+          --body "## Release v$NEW_VERSION
+
+        $CHANGELOG
+
+        **Changes:**
+        - Version bump: $CURRENT_VERSION → $NEW_VERSION
+        - Generated changelog using git-cliff
+
+        **Next Steps:**
+        1. Review and merge this PR to dev
+        2. Merge dev to main to create the actual release" \
           --base dev \
           --head "$RELEASE_BRANCH"
 

@@ -88,7 +88,7 @@ end
 
 ---Make an HTTP request to the API with optional dialog support
 ---@generic Body : table
----@param method "GET"|"POST"|"PUT"|"DELETE" HTTP method to use
+---@param method "GET"|"POST"|"PUT"|"DELETE"|"PATCH" HTTP method to use
 ---@param endpoint string API endpoint path
 ---@param config? HttpClientOptions<Body, QueryParam[]> Configuration including body, query, and dialogs
 ---@return table|nil result, Error|nil error
@@ -247,6 +247,16 @@ end
 function HttpClient:delete(endpoint, config)
     config = config or {}
     return self:makeRequest('DELETE', endpoint, config)
+end
+
+---Make a PATCH request
+---@generic Body : table
+---@param endpoint string API endpoint path
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@return table|nil result, Error|nil error
+function HttpClient:patch(endpoint, config)
+    config = config or {}
+    return self:makeRequest('PATCH', endpoint, config)
 end
 
 return HttpClient

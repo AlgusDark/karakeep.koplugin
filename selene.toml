@@ -39,6 +39,7 @@ globals = [
     "DocSettings",
     "Dispatcher",
     "FFIUtil",
+    "G_reader_settings",
 
     # KOReader utilities
     "util",
