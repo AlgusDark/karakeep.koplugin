@@ -1,4 +1,4 @@
-name: Create Release Artifact
+name: CI and Release
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
 
     steps:
@@ -58,62 +58,54 @@ jobs:
           configpath: ".luarc.json"
           checklevel: "Error"
 
-      - name: Build release artifact
+      - name: Check if version changed
+        if: github.event_name == 'push'
+        id: version_check
         run: |
-          task build-optimized
-          echo "=== Checking build output ==="
-          ls -la
-          ls -la dist/ || echo "dist directory not found"
-          ls -la dist/karakeep.koplugin/ || echo "karakeep.koplugin directory not found"
-
-      - name: Create ZIP package
-        run: |
-          cd dist
-          zip -r karakeep.koplugin.zip karakeep.koplugin/
-          ls -la karakeep.koplugin.zip
-          echo "=== ZIP contents preview ==="
-          unzip -l karakeep.koplugin.zip | head -20
-
-      - name: Get version from _meta.lua
-        id: get_version
-        run: |
-          VERSION=$(grep -E "version = ['\"]([^'\"]*)['\"]" src/_meta.lua | sed -E "s/version = ['\"]([^'\"]*)['\"].*/\1/" | tr -d ' ')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Validate tag matches version
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
-          META_VERSION="${{ steps.get_version.outputs.version }}"
-
-          echo "🏷️  Tag version: $TAG_VERSION"
-          echo "📄 _meta.lua version: $META_VERSION"
-
-          if [ "$TAG_VERSION" != "$META_VERSION" ]; then
-            echo "❌ Version mismatch!"
-            echo "Tag version ($TAG_VERSION) does not match _meta.lua version ($META_VERSION)"
-            echo "Please update src/_meta.lua or use the correct tag"
-            exit 1
+          # Get current version
+          CURRENT_VERSION=$(grep -E "version = ['\"]([^'\"]*)['\"]" src/_meta.lua | sed -E "s/version = ['\"]([^'\"]*)['\"].*/\1/" | tr -d ' ')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # Check if this commit changed the version
+          if git diff HEAD~1 HEAD --name-only | grep -q "src/_meta.lua"; then
+            if git diff HEAD~1 HEAD src/_meta.lua | grep -q "version = "; then
+              echo "version_changed=true" >> $GITHUB_OUTPUT
+              echo "Version changed to $CURRENT_VERSION"
+            else
+              echo "version_changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "version_changed=false" >> $GITHUB_OUTPUT
           fi
 
-          echo "✅ Version validation passed"
-
-      - name: Upload release artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: karakeep-koplugin-v${{ steps.get_version.outputs.version }}
-          path: dist/
-          retention-days: 90
-
-      - name: Setup git-cliff
+      - name: Install git-cliff for changelog
+        if: github.event_name == 'push' && steps.version_check.outputs.version_changed == 'true'
         uses: kenji-miyake/setup-git-cliff@v2
 
-      - name: Generate changelog
-        id: changelog
+      - name: Create tag and release
+        if: github.event_name == 'push' && steps.version_check.outputs.version_changed == 'true'
         run: |
-          CHANGELOG=$(git-cliff --tag v${{ steps.get_version.outputs.version }} --strip header)
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-
+          VERSION="${{ steps.version_check.outputs.current_version }}"
+          TAG_NAME="v$VERSION"
+          
+          # Create and push tag
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+          
+          # Build release artifact
+          task build-optimized
+          
+          # Create ZIP package
+          cd dist
+          zip -r karakeep.koplugin.zip karakeep.koplugin/
+          
+          # Generate changelog
+          CHANGELOG=$(git-cliff --tag "$TAG_NAME" --strip header || echo "Release $TAG_NAME")
+          
+          # Create GitHub release
+          gh release create "$TAG_NAME" \
+            --title "Release $TAG_NAME" \
+            --notes "$CHANGELOG" \
+            dist/karakeep.koplugin.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

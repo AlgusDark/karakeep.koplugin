@@ -3,6 +3,8 @@ name: Sync Dev Branch
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
 
 permissions:
   contents: write

@@ -252,8 +252,8 @@ tasks:
         echo "  • Create release branch: release/v$NEW_VERSION"
         echo "  • Update src/_meta.lua version to $NEW_VERSION"
         echo "  • Create commit: 'chore: bump version to $NEW_VERSION'"
-        echo "  • Push release branch and create PR to dev"
-        echo "  • When PR is merged, GitHub Actions will create release"
+        echo "  • Push release branch and create PR to main"
+        echo "  • When PR is merged, GitHub Actions will create tag and release"
         echo ""
 
         # Handle dry run
@@ -331,41 +331,21 @@ tasks:
         echo "📤 Pushing release branch: $RELEASE_BRANCH"
         git push -u origin "$RELEASE_BRANCH"
 
-        # Generate changelog using git-cliff
-        echo "📝 Generating changelog..."
-        CHANGELOG=$(git-cliff --tag "v$NEW_VERSION" --strip header || echo "No changelog generated")
-
-        # Create PR using GitHub CLI
-        echo "🔄 Creating Pull Request..."
+        # Create manual PR instructions
+        echo "🔄 Release branch ready for PR creation..."
         CURRENT_VERSION=$(grep -o "version = '[^']*'" src/_meta.lua | sed "s/version = '\(.*\)'/\1/")
-        gh pr create \
-          --title "Release v$NEW_VERSION" \
-          --body "## Release v$NEW_VERSION
-
-        $CHANGELOG
-
-        **Changes:**
-        - Version bump: $CURRENT_VERSION → $NEW_VERSION
-        - Generated changelog using git-cliff
-
-        **Next Steps:**
-        1. Review and merge this PR to dev
-        2. Merge dev to main to create the actual release" \
-          --base dev \
-          --head "$RELEASE_BRANCH"
 
         echo ""
-        echo "✅ Release PR created successfully!"
+        echo "✅ Release branch created successfully!"
         echo "📝 Version updated to: $NEW_VERSION"
         echo "🌿 Branch: $RELEASE_BRANCH"
-        echo "🔄 Pull Request created to dev branch"
-        echo "🔗 Check: https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/pulls"
         echo ""
         echo "📋 Next steps:"
-        echo "  1. Merge the PR to dev branch"
-        echo "  2. Merge dev to main to create the release"
-        echo "  3. Dev will auto-sync with main via GitHub Actions"
-        echo "  4. If auto-sync fails, run: task sync-dev"
+        echo "  1. Create PR: $RELEASE_BRANCH → main"
+        echo "     🔗 https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^.]*\).*/\1/')/compare/main...$RELEASE_BRANCH"
+        echo "  2. Merge the PR to main branch"  
+        echo "  3. GitHub Actions will auto-create tag and release"
+        echo "  4. Dev will auto-sync with main via GitHub Actions"
 
   sync-dev:
     desc: "Sync dev branch with main branch"
