@@ -58,6 +58,7 @@ jobs:
           # Create ZIP package
           cd dist
           zip -r karakeep.koplugin.zip karakeep.koplugin/
+          cd ..
           
           # Generate changelog
           CHANGELOG=$(git-cliff --tag "$TAG_NAME" --strip header || echo "Release $TAG_NAME")
