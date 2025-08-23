@@ -10,6 +10,7 @@ This plugin integrates with [Karakeep](https://karakeep.app/), a self-hostable â
 
 - [x] Create Bookmarks
   - [x] Save links
+  - [x] Export Highlights 
 - [ ] Browse your bookmarks
 - [ ] Search bookmarks
 - [ ] Download bookmarks for offline access
