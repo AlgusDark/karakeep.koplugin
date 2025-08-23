@@ -141,19 +141,6 @@ function QueueManager:clear()
     logger.dbg('[QueueManager] Cleared all queue data')
 end
 
----Event handler: Queue a bookmark link
----@param payload { url: string } Payload containing the URL to queue for bookmark creation
-function QueueManager:onQueueBookmarkLink(payload)
-    logger.dbg('[QueueManager] Received queue bookmark link event', payload.url)
-
-    -- Convert to BookmarkRequestLink format
-    local bookmark_payload = {
-        type = 'link',
-        url = payload.url,
-    }
-
-    self:queueCreateBookmark(bookmark_payload)
-end
 
 function QueueManager:onFlushSettings()
     if self.updated then

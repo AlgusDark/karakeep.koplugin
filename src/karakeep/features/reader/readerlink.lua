@@ -2,10 +2,8 @@ local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 local EventListener = require('ui/widget/eventlistener')
 
-local EventManager = require('karakeep/shared/event_manager')
-
 ---@class KarakeepReaderLink : EventListener
----@field ui {link: table} # ReaderUI
+---@field ui UI # ReaderUI
 local KarakeepReaderLink = EventListener:extend({})
 
 function KarakeepReaderLink:init()
@@ -15,7 +13,10 @@ function KarakeepReaderLink:init()
                 text = _('Save to Karakeep'),
                 callback = function()
                     UIManager:close(this.external_link_dialog)
-                    EventManager.broadcast('CreateNewKarakeepBookmark', link_url)
+                    self.ui.karakeep_bookmark:createOrQueue({
+                        type = 'link',
+                        url = link_url,
+                    })
                 end,
             }
         end)

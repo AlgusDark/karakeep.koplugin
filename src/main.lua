@@ -5,21 +5,22 @@ local lfs = require('libs/libkoreader-lfs')
 local DataStorage = require('datastorage')
 local Provider = require('provider')
 
-local KarakeepReaderLink = require('karakeep/features/reader/modules/readerlink')
+local KarakeepReaderLink = require('karakeep/features/reader/readerlink')
 local Settings = require('karakeep/shared/karakeep_settings')
 local getMainMenu = require('karakeep/features/menu/main_menu')
 local KarakeepAPI = require('karakeep/api/karakeep_api')
-local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local QueueManager = require('karakeep/features/queue/queue_manager')
+local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local SyncService = require('karakeep/features/sync/sync_service')
 local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
 ---@field karakeep_api KarakeepAPI
+---@field karakeep_queue_manager QueueManager
 ---@field karakeep_bookmark KarakeepBookmark
 ---@field karakeep_link KarakeepReaderLink
----@field karakeep_queue_manager QueueManager
+---@field karakeep_sync_service SyncService
 
 ---@class Karakeep : WidgetContainer
 ---@field name string Plugin internal name (from _meta.lua)
@@ -64,7 +65,6 @@ function Karakeep:init()
         })
     )
 
-    -- Register queue manager as EventListener module (after API)
     self.ui:registerModule(
         'karakeep_queue_manager',
         QueueManager:new({
