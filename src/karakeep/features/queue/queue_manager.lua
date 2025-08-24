@@ -141,7 +141,6 @@ function QueueManager:clear()
     logger.dbg('[QueueManager] Cleared all queue data')
 end
 
-
 function QueueManager:onFlushSettings()
     if self.updated then
         logger.dbg('[QueueManager] Flushing queue to disk')

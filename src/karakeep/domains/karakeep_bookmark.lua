@@ -1,9 +1,9 @@
 local EventListener = require('ui/widget/eventlistener')
 local NetworkMgr = require('ui/network/manager')
+local InfoMessage = require('ui/widget/infomessage')
+local UIManager = require('ui/uimanager')
 local logger = require('logger')
 local _ = require('gettext')
-
-local Notification = require('karakeep/shared/widgets/notification')
 
 ---@class KarakeepBookmark : EventListener
 ---@field ui UI
@@ -24,7 +24,9 @@ end
 function KarakeepBookmark:createOrQueue(bookmark_data)
     if not NetworkMgr:isOnline() then
         self.ui.karakeep_queue_manager:queueCreateBookmark(bookmark_data)
-        Notification:info(_('Bookmark will be saved to Karakeep in the next sync.'))
+        UIManager:show(InfoMessage:new({
+            text = _('Bookmark will be saved to Karakeep in the next sync.'),
+        }))
         return true
     end
 
@@ -34,11 +36,16 @@ function KarakeepBookmark:createOrQueue(bookmark_data)
 
     if not result then
         self.ui.karakeep_queue_manager:queueCreateBookmark(bookmark_data)
-        Notification:info(_('Bookmark will be saved to Karakeep in the next sync.'))
+        UIManager:show(InfoMessage:new({
+            text = _('Bookmark will be saved to Karakeep in the next sync.'),
+        }))
         return true
     end
 
-    Notification:success(_('Bookmark saved to Karakeep.'))
+    UIManager:show(InfoMessage:new({
+        text = _('Bookmark saved to Karakeep.'),
+        timeout = 2,
+    }))
     return true
 end
 

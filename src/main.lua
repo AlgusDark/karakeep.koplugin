@@ -15,7 +15,7 @@ local SyncService = require('karakeep/features/sync/sync_service')
 local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 
 ---Augment UI interface with registered Karakeep modules
----@class UI : WidgetContainer
+---@class UI: BaseUI
 ---@field karakeep_api KarakeepAPI
 ---@field karakeep_queue_manager QueueManager
 ---@field karakeep_bookmark KarakeepBookmark
@@ -32,6 +32,7 @@ local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 ---@field repo_name string GitHub repository name (from _meta.lua)
 ---@field settings Settings Plugin settings instance
 ---@field data_dir string Full path to karakeep data directory
+---@field ui UI
 local Karakeep = WidgetContainer:extend({
     name = 'Karakeep',
     is_doc_only = false,

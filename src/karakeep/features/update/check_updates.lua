@@ -1,8 +1,8 @@
 local _ = require('gettext')
 local logger = require('logger')
+local InfoMessage = require('ui/widget/infomessage')
 local UIManager = require('ui/uimanager')
 local ConfirmBox = require('ui/widget/confirmbox')
-local Notification = require('karakeep/shared/widgets/notification')
 local GitHubClient = require('karakeep/shared/github_client')
 
 ---Update checker feature for Karakeep plugin
@@ -222,7 +222,9 @@ function CheckUpdates:showUpdateNotification(update_info)
                 Device:doExternalDictLookup(html_url, html_url)
             else
                 local url_msg = html_url ~= '' and html_url or _('GitHub page not available')
-                Notification:info(string.format(_('Visit: %s'), url_msg))
+                UIManager:show(InfoMessage:new({
+                    text = string.format(_('Visit: %s'), url_msg),
+                }))
             end
         end,
     }))
@@ -235,19 +237,27 @@ function CheckUpdates:checkAndNotify(include_beta)
 
     if error then
         local error_msg = error or _('Unknown error')
-        Notification:error(_('Failed to check for updates: ') .. error_msg)
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to check for updates: ') .. error_msg,
+            timeout = 5,
+        }))
         return
     end
 
     if not update_info then
-        Notification:error(_('Failed to check for updates: No response'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to check for updates: No response'),
+            timeout = 5,
+        }))
         return
     end
 
     if update_info.has_update then
         self:showUpdateNotification(update_info)
     else
-        Notification:info(_('You have the latest version!'))
+        UIManager:show(InfoMessage:new({
+            text = _('You have the latest version!'),
+        }))
     end
 end
 
