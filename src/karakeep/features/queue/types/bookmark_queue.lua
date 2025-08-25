@@ -141,7 +141,6 @@ end
 function BookmarkQueue:processCreateAction(key, payload)
     logger.dbg('[BookmarkQueue] Processing create action for', key)
 
-    -- Call API directly with injected dependency
     local _result, error = self.api:createNewBookmark({
         body = payload.data,
     })

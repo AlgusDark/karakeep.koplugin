@@ -8,7 +8,6 @@ local util = require('util')
 local logger = require('logger')
 
 local Files = require('karakeep/shared/files')
-local Notification = require('karakeep/shared/widgets/notification')
 local Error = require('karakeep/shared/error')
 
 -- This is the main Http client that handles HTTP communication.
@@ -21,12 +20,7 @@ local HttpClient = {}
 ---@field api_token string API token for authentication
 ---@field api_base string API base URL (defaults to /v1)
 
----@class ApiDialogConfig
----@field loading? {text?: string, timeout?: number|nil} Loading notification (timeout=nil for manual close)
----@field error? {text?: string, timeout?: number|nil} Error notification (defaults to 5s)
----@field success? {text?: string, timeout?: number|nil} Success notification (defaults to 2s)
-
----@class HttpClientOptions<Body, QueryParams>: {body?: Body, query?: QueryParams, dialogs?: ApiDialogConfig}
+---@class HttpClientOptions<Body, QueryParams>: {body?: Body, query?: QueryParams}
 
 ---Create a new API instance
 ---@param config HttpClientConfig Configuration table with server address and API token
@@ -86,32 +80,20 @@ local function buildErrorMessage(code, response_text)
     end
 end
 
----Make an HTTP request to the API with optional dialog support
+---Make an HTTP request to the API
 ---@generic Body : table
 ---@param method "GET"|"POST"|"PUT"|"DELETE"|"PATCH" HTTP method to use
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration including body, query, and dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration including body and query
 ---@return table|nil result, Error|nil error
 function HttpClient:makeRequest(method, endpoint, config)
     config = config or {}
-    local dialogs = config.dialogs
 
     local server_address = self.server_address
     local api_token = self.api_token
 
     if not server_address or not api_token or server_address == '' or api_token == '' then
-        if dialogs and dialogs.error then
-            local error_text = dialogs.error.text
-                or _('Server address and API token must be configured')
-            Notification:error(error_text, { timeout = dialogs.error.timeout })
-        end
         return nil, Error.new(_('Server address and API token must be configured'))
-    end
-
-    local loading_notification
-    if dialogs and dialogs.loading and dialogs.loading.text then
-        loading_notification =
-            Notification:info(dialogs.loading.text, { timeout = dialogs.loading.timeout })
     end
 
     local base_url = Files.rtrimSlashes(server_address) .. self.api_base
@@ -161,36 +143,21 @@ function HttpClient:makeRequest(method, endpoint, config)
     logger.dbg('[HttpClient]', method, url, '->', code or 'no response')
     socketutil:reset_timeout()
 
-    if loading_notification then
-        loading_notification:close()
-    end
     if resp_headers == nil then
         local error_message = _('Network error occurred')
         logger.err('[HttpClient] Network error:', method, url)
-        if dialogs and dialogs.error then
-            local error_text = dialogs.error.text or error_message
-            Notification:error(error_text, { timeout = dialogs.error.timeout })
-        end
         return nil, Error.new(error_message)
     end
 
     local response_text = table.concat(response_body)
 
     if code == 200 or code == 201 or code == 204 then
-        if dialogs and dialogs.success and dialogs.success.text then
-            Notification:success(dialogs.success.text, { timeout = dialogs.success.timeout })
-        end
-
         if response_text and response_text ~= '' then
             local success, data = pcall(JSON.decode, response_text)
             if success then
                 return data, nil
             else
                 local error_message = _('Invalid JSON response from server')
-                if dialogs and dialogs.error then
-                    local error_text = dialogs.error.text or error_message
-                    Notification:error(error_text, { timeout = dialogs.error.timeout })
-                end
                 return nil, Error.new(error_message)
             end
         else
@@ -200,19 +167,13 @@ function HttpClient:makeRequest(method, endpoint, config)
 
     local error_message = buildErrorMessage(code, response_text)
     logger.warn('[HttpClient] API error:', method, url, '->', code, error_message)
-
-    if dialogs and dialogs.error then
-        local error_text = dialogs.error.text or error_message
-        Notification:error(error_text, { timeout = dialogs.error.timeout })
-    end
-
     return nil, Error.new(error_message)
 end
 
 ---Make a GET request
 ---@generic Body : nil
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query
 ---@return table|nil result, Error|nil error
 function HttpClient:get(endpoint, config)
     config = config or {}
@@ -222,7 +183,7 @@ end
 ---Make a POST request
 ---@generic Body : table
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body and query
 ---@return table|nil result, Error|nil error
 function HttpClient:post(endpoint, config)
     config = config or {}
@@ -232,7 +193,7 @@ end
 ---Make a PUT request
 ---@generic Body : table
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body and query
 ---@return table|nil result, Error|nil error
 function HttpClient:put(endpoint, config)
     config = config or {}
@@ -242,7 +203,7 @@ end
 ---Make a DELETE request
 ---@generic Body : nil
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query
 ---@return table|nil result, Error|nil error
 function HttpClient:delete(endpoint, config)
     config = config or {}
@@ -252,7 +213,7 @@ end
 ---Make a PATCH request
 ---@generic Body : table
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body and query
 ---@return table|nil result, Error|nil error
 function HttpClient:patch(endpoint, config)
     config = config or {}
