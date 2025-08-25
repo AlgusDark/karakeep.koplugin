@@ -9,15 +9,6 @@ local _ = require('gettext')
 ---@field ui UI
 local KarakeepBookmark = EventListener:extend({})
 
----Create a new bookmark directly via API
----@param bookmark_data BookmarkRequest The bookmark data to create
----@return table|nil result, Error|nil error
-function KarakeepBookmark:create(bookmark_data)
-    return self.ui.karakeep_api:createNewBookmark({
-        body = bookmark_data,
-    })
-end
-
 ---Create a new bookmark with connectivity awareness and automatic queueing
 ---@param bookmark_data BookmarkRequest The bookmark data to create
 ---@return boolean success Whether the operation completed successfully
@@ -26,11 +17,22 @@ function KarakeepBookmark:createOrQueue(bookmark_data)
         self.ui.karakeep_queue_manager:queueCreateBookmark(bookmark_data)
         UIManager:show(InfoMessage:new({
             text = _('Bookmark will be saved to Karakeep in the next sync.'),
+            timeout = 1,
         }))
         return true
     end
 
-    local result, error = self:create(bookmark_data)
+    local saving_message = InfoMessage:new({
+        text = _('Saving...'),
+    })
+    UIManager:show(saving_message)
+    UIManager:forceRePaint()
+
+    local result, error = self.ui.karakeep_api:createNewBookmark({
+        body = bookmark_data,
+    })
+
+    UIManager:close(saving_message)
 
     logger.dbg('[Karakeep:Bookmark] Creating new bookmark', result, error)
 
@@ -38,13 +40,14 @@ function KarakeepBookmark:createOrQueue(bookmark_data)
         self.ui.karakeep_queue_manager:queueCreateBookmark(bookmark_data)
         UIManager:show(InfoMessage:new({
             text = _('Bookmark will be saved to Karakeep in the next sync.'),
+            timeout = 1,
         }))
         return true
     end
 
     UIManager:show(InfoMessage:new({
         text = _('Bookmark saved to Karakeep.'),
-        timeout = 2,
+        timeout = 1,
     }))
     return true
 end

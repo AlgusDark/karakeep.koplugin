@@ -100,7 +100,16 @@ end
 ---Sync all pending items (called after user confirms)
 function SyncService:syncAllPendingItems()
     logger.info('[SyncService] Starting sync of all pending items')
+
+    local sync_message = InfoMessage:new({
+        text = _('Synchronizing...'),
+    })
+    UIManager:show(sync_message)
+    UIManager:forceRePaint()
+
     local results = self.ui.karakeep_queue_manager:syncPendingItems()
+
+    UIManager:close(sync_message)
 
     -- Show result notification
     if results.total_items == 0 then
