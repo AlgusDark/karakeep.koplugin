@@ -4,6 +4,13 @@
         "G_reader_settings"
     ],
     "Lua.workspace.library": [
-        "typedefs"
+        "typedefs",
+        "src"
+    ],
+    "Lua.runtime.path": [
+        "?.lua",
+        "?/init.lua",
+        "src/?.lua",
+        "src/?/init.lua"
     ]
 }

@@ -1,9 +1,10 @@
 local BaseExporter = require('base')
+local InfoMessage = require('ui/widget/infomessage')
+local UIManager = require('ui/uimanager')
 local logger = require('logger')
 local _ = require('gettext')
 
 local KarakeepMetadata = require('karakeep/shared/karakeep_metadata')
-local Notification = require('karakeep/shared/widgets/notification')
 
 ---@class BookNotes
 ---@field title string
@@ -58,13 +59,19 @@ function KarakeepExporter:createBookmark(params)
 
     if error then
         logger.err('[KarakeepExporter] Failed to create bookmark:', error.message)
-        Notification:error(_('Failed to create Karakeep bookmark'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to create Karakeep bookmark'),
+            timeout = 5,
+        }))
         return nil
     end
 
     if not result or not result.id then
         logger.err('[KarakeepExporter] Invalid response: missing bookmark ID')
-        Notification:error(_('Failed to create Karakeep bookmark'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to create Karakeep bookmark'),
+            timeout = 5,
+        }))
         return nil
     end
 
@@ -85,7 +92,10 @@ function KarakeepExporter:updateBookmark(params)
 
     if error then
         logger.err('[KarakeepExporter] Failed to update bookmark:', error.message)
-        Notification:error(_('Failed to update Karakeep bookmark'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to update Karakeep bookmark'),
+            timeout = 5,
+        }))
         return nil
     end
 
@@ -146,11 +156,17 @@ function KarakeepExporter:export(book_notes)
     end
 
     if success_count > 0 then
-        Notification:success(_('Exported to Karakeep: ') .. success_count .. _(' books'))
+        UIManager:show(InfoMessage:new({
+            text = _('Exported to Karakeep: ') .. success_count .. _(' books'),
+            timeout = 2,
+        }))
     end
 
     if error_count > 0 then
-        Notification:warn(_('Failed to export ') .. error_count .. _(' books'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to export ') .. error_count .. _(' books'),
+            timeout = 3,
+        }))
     end
 
     logger.info(

@@ -1,5 +1,6 @@
 local EventListener = require('ui/widget/eventlistener')
 local ButtonDialog = require('ui/widget/buttondialog')
+local InfoMessage = require('ui/widget/infomessage')
 local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 local T = require('ffi/util').template
@@ -12,9 +13,11 @@ local SyncService = EventListener:extend({})
 ---Show sync confirmation dialog when there are pending items
 function SyncService:showSyncDialog()
     if not self.ui.karakeep_queue_manager:hasPendingItems() then
-        local Notification = require('karakeep/shared/widgets/notification')
         logger.dbg('[SyncService] No pending items, showing notification')
-        Notification:info(_('No pending items to sync'))
+        UIManager:show(InfoMessage:new({
+            text = _('No pending items to sync'),
+            timeout = 2,
+        }))
         return
     end
 
@@ -70,7 +73,6 @@ end
 ---@param queue_size number Number of items in queue
 function SyncService:showClearQueueDialog(queue_size)
     local ConfirmBox = require('ui/widget/confirmbox')
-    local Notification = require('karakeep/shared/widgets/notification')
 
     local message = T(
         _(
@@ -84,7 +86,10 @@ function SyncService:showClearQueueDialog(queue_size)
         ok_text = _('Clear Queue'),
         ok_callback = function()
             self.ui.karakeep_queue_manager:clear()
-            Notification:info(_('Sync queue cleared'))
+            UIManager:show(InfoMessage:new({
+                text = _('Sync queue cleared'),
+                timeout = 2,
+            }))
         end,
         cancel_text = _('Cancel'),
     })
@@ -94,22 +99,39 @@ end
 
 ---Sync all pending items (called after user confirms)
 function SyncService:syncAllPendingItems()
-    local Notification = require('karakeep/shared/widgets/notification')
-
     logger.info('[SyncService] Starting sync of all pending items')
+
+    local sync_message = InfoMessage:new({
+        text = _('Synchronizing...'),
+    })
+    UIManager:show(sync_message)
+    UIManager:forceRePaint()
+
     local results = self.ui.karakeep_queue_manager:syncPendingItems()
+
+    UIManager:close(sync_message)
 
     -- Show result notification
     if results.total_items == 0 then
-        Notification:info(_('No pending items to sync'))
+        UIManager:show(InfoMessage:new({
+            text = _('No pending items to sync'),
+            timeout = 2,
+        }))
     elseif results.success_count > 0 and results.error_count == 0 then
-        Notification:success(T(_('Successfully synced %1 items'), results.success_count))
+        UIManager:show(InfoMessage:new({
+            text = T(_('Successfully synced %1 items'), results.success_count),
+            timeout = 2,
+        }))
     elseif results.success_count > 0 and results.error_count > 0 then
-        Notification:warn(
-            T(_('Synced %1 items, %2 failed'), results.success_count, results.error_count)
-        )
+        UIManager:show(InfoMessage:new({
+            text = T(_('Synced %1 items, %2 failed'), results.success_count, results.error_count),
+            timeout = 3,
+        }))
     else
-        Notification:error(_('Failed to sync all items'))
+        UIManager:show(InfoMessage:new({
+            text = _('Failed to sync all items'),
+            timeout = 5,
+        }))
     end
 end
 

@@ -1,8 +1,8 @@
 local _ = require('gettext')
+local InfoMessage = require('ui/widget/infomessage')
 local MultiInputDialog = require('ui/widget/multiinputdialog')
 local UIManager = require('ui/uimanager')
 
-local Notification = require('karakeep/shared/widgets/notification')
 local EventManager = require('karakeep/shared/event_manager')
 
 ---@param settings Settings
@@ -51,7 +51,10 @@ local function showDialog(settings)
                             server_address = settings.server_address,
                         })
 
-                        Notification:success(_('Settings saved'))
+                        UIManager:show(InfoMessage:new({
+                            text = _('Settings saved'),
+                            timeout = 2,
+                        }))
                         UIManager:close(settings_dialog)
                     end,
                 },
