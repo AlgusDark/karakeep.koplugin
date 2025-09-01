@@ -87,10 +87,10 @@ local function buildErrorMessage(code, response_text)
 end
 
 ---Make an HTTP request to the API with optional dialog support
----@generic Body : table
+---@generic Body, QueryParams
 ---@param method "GET"|"POST"|"PUT"|"DELETE"|"PATCH" HTTP method to use
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration including body, query, and dialogs
+---@param config? HttpClientOptions<Body, QueryParams> Configuration including body, query, and dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:makeRequest(method, endpoint, config)
     config = config or {}
@@ -210,9 +210,9 @@ function HttpClient:makeRequest(method, endpoint, config)
 end
 
 ---Make a GET request
----@generic Body : nil
+---@generic QueryParams
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@param config? HttpClientOptions<nil, QueryParams> Configuration with optional query, dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:get(endpoint, config)
     config = config or {}
@@ -220,9 +220,9 @@ function HttpClient:get(endpoint, config)
 end
 
 ---Make a POST request
----@generic Body : table
+---@generic Body, QueryParams
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParams> Configuration with optional body, query, dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:post(endpoint, config)
     config = config or {}
@@ -230,9 +230,9 @@ function HttpClient:post(endpoint, config)
 end
 
 ---Make a PUT request
----@generic Body : table
+---@generic Body, QueryParams
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParams> Configuration with optional body, query, dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:put(endpoint, config)
     config = config or {}
@@ -240,9 +240,9 @@ function HttpClient:put(endpoint, config)
 end
 
 ---Make a DELETE request
----@generic Body : nil
+---@generic QueryParams
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional query, dialogs
+---@param config? HttpClientOptions<nil, QueryParams> Configuration with optional query, dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:delete(endpoint, config)
     config = config or {}
@@ -250,9 +250,9 @@ function HttpClient:delete(endpoint, config)
 end
 
 ---Make a PATCH request
----@generic Body : table
+---@generic Body, QueryParams
 ---@param endpoint string API endpoint path
----@param config? HttpClientOptions<Body, QueryParam[]> Configuration with optional body, query, dialogs
+---@param config? HttpClientOptions<Body, QueryParams> Configuration with optional body, query, dialogs
 ---@return table|nil result, Error|nil error
 function HttpClient:patch(endpoint, config)
     config = config or {}

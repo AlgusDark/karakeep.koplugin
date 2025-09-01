@@ -129,7 +129,47 @@ end
 ---@field content BookmarkContent Content object with type-specific fields
 ---@field assets table[] Array of asset objects
 
+---@class BookmarkQueryParams
+---@field archived? boolean Filter bookmarks by archived status
+---@field favourited? boolean Filter bookmarks by favorite status
+---@field sortOrder? 'asc'|'desc' Sort direction (default: 'desc')
+---@field limit? number Maximum number of bookmarks to return
+---@field cursor? string Pagination cursor
+---@field includeContent? boolean Include bookmark content in response (default: true)
+
+---@class BookmarksListResponse
+---@field bookmarks BookmarkResponse[] Array of bookmark objects
+---@field nextCursor string|nil Cursor for next page of results
+
+---@alias ListType 'manual'|'smart'
+
+---@class ListResponse
+---@field id string
+---@field name string
+---@field description string|nil
+---@field icon string
+---@field parentId string|nil
+---@field type ListType
+---@field query string|nil
+---@field public boolean
+
+---@class ListsResponse
+---@field lists ListResponse[] Array of list objects
+
+---@class ListBookmarksQueryParams
+---@field sortOrder? 'asc'|'desc' Sort direction (default: 'desc')
+---@field limit? number Maximum number of bookmarks to return
+---@field cursor? string Pagination cursor
+---@field includeContent? boolean Include bookmark content in response (default: true)
+
+---@class SingleBookmarkQueryParams
+---@field includeContent? boolean Include bookmark content in response (default: true)
+
 ---@alias BookmarkRequest BookmarkRequestLink | BookmarkRequestText | BookmarkRequestAsset
+
+-- =============================================================================
+-- Bookmarks
+-- =============================================================================
 
 ---Create a new bookmark
 ---@param config HttpClientOptions<BookmarkRequest, QueryParam[]>
@@ -144,6 +184,46 @@ end
 ---@return table|nil result, Error|nil error
 function KarakeepAPI:updateBookmark(bookmark_id, config)
     return self.api_client:patch('/bookmarks/' .. bookmark_id, config)
+end
+
+---Get all bookmarks with optional filtering and pagination
+---@param config? HttpClientOptions<nil, BookmarkQueryParams>
+---@return BookmarksListResponse|nil result, Error|nil error
+function KarakeepAPI:getAllBookmarks(config)
+    return self.api_client:get('/bookmarks', config)
+end
+
+---Get a single bookmark by ID
+---@param bookmark_id string The bookmark ID to retrieve
+---@param config? HttpClientOptions<nil, SingleBookmarkQueryParams>
+---@return BookmarkResponse|nil result, Error|nil error
+function KarakeepAPI:getBookmark(bookmark_id, config)
+    return self.api_client:get('/bookmarks/' .. bookmark_id, config)
+end
+
+-- =============================================================================
+-- Lists
+-- =============================================================================
+
+---Get all lists
+---@return ListsResponse|nil result, Error|nil error
+function KarakeepAPI:getAllLists()
+    return self.api_client:get('/lists')
+end
+
+---Get a single list by ID
+---@param list_id string The list ID to retrieve
+---@return ListResponse|nil result, Error|nil error
+function KarakeepAPI:getList(list_id)
+    return self.api_client:get('/lists/' .. list_id)
+end
+
+---Get bookmarks in a specific list
+---@param list_id string The list ID to get bookmarks from
+---@param config? HttpClientOptions<nil, ListBookmarksQueryParams>
+---@return BookmarksListResponse|nil result, Error|nil error
+function KarakeepAPI:getBookmarksInList(list_id, config)
+    return self.api_client:get('/lists/' .. list_id .. '/bookmarks', config)
 end
 
 return KarakeepAPI
