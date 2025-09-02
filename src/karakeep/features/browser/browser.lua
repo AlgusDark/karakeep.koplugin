@@ -4,7 +4,6 @@ local TitleBar = require('ui/widget/titlebar')
 local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 
-
 ---@class BrowserOptions : BookListOptions
 ---@field ui table UI manager reference
 ---@field title string Browser title

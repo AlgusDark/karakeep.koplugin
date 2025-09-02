@@ -123,7 +123,44 @@ function BaseView:transformBookmark(bookmark)
         text = title,
         is_file = true,
         callback = function()
-            self:showSuccess(_('You tapped ') .. bookmark.id)
+            -- First check if it's potentially downloadable (link type)
+            if bookmark.content and bookmark.content.type == 'link' then
+                -- Fetch full bookmark with content to check for htmlContent
+                local full_bookmark, error = self:handleApiCall(function()
+                    return self.api_client:getBookmark(bookmark.id, {
+                        query = {
+                            includeContent = true,
+                        },
+                    })
+                end, _('Loading bookmark content...'))
+
+                if error then
+                    return -- Error already shown by handleApiCall
+                end
+
+                -- Check if the full bookmark has htmlContent for EPUB conversion
+                if
+                    full_bookmark
+                    and full_bookmark.content
+                    and full_bookmark.content.htmlContent
+                then
+                    -- Download and convert to EPUB
+                    local Downloader = require('karakeep/features/downloader/download')
+                    Downloader:execute({
+                        bookmark = full_bookmark,
+                        browser = self.browser,
+                        ui = self.browser.ui,
+                        data_dir = require('datastorage'):getFullDataDir(),
+                    })
+                else
+                    -- Link bookmark but no HTML content
+                    self:showSuccess(_('Link bookmark has no HTML content for download'))
+                end
+            else
+                -- Show info for non-link bookmarks
+                local content_type = bookmark.content and bookmark.content.type or 'unknown'
+                self:showSuccess(_('Bookmark type: ') .. content_type .. ' (not downloadable yet)')
+            end
         end,
         hold_callback = function()
             UIManager:show(InfoMessage:new({
