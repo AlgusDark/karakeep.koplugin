@@ -139,12 +139,12 @@ function HttpClient:makeRequest(method, endpoint, config)
         ['User-Agent'] = 'KOReader/1.0',
     }
 
-    local response_body = {}
+    local sink = {}
     local request = {
         url = url,
         method = method,
         headers = headers,
-        sink = socketutil.table_sink(response_body),
+        sink = ltn12.sink.table(sink),
     }
 
     if config.body then
@@ -174,7 +174,7 @@ function HttpClient:makeRequest(method, endpoint, config)
         return nil, Error.new(error_message)
     end
 
-    local response_text = table.concat(response_body)
+    local response_text = table.concat(sink)
 
     if code == 200 or code == 201 or code == 204 then
         if dialogs and dialogs.success and dialogs.success.text then
