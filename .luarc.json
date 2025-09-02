@@ -1,9 +1,58 @@
 {
-    "Lua.runtime.version": "Lua 5.1",
-    "Lua.diagnostics.globals": [
-        "G_reader_settings"
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "workspace": {
+    "library": ["./typedefs", "./src"],
+    "checkThirdParty": true,
+    "ignoreSubmodules": true
+  },
+  "completion": {
+    "requireSeparator": "/",
+    "callSnippet": "Both"
+  },
+  "diagnostics": {
+    "unusedLocalExclude": ["_*"],
+    "globals": [
+      "require",
+      "_",
+      "UIManager",
+      "BookList",
+      "WidgetContainer",
+      "InfoMessage",
+      "ButtonDialog",
+      "ConfirmBox",
+      "DataStorage",
+      "LuaSettings",
+      "CacheSQLite",
+      "DocSettings",
+      "Dispatcher",
+      "FFIUtil",
+      "util",
+      "lfs",
+      "logger",
+      "dbg",
+      "htmlparser"
     ],
-    "Lua.workspace.library": [
-        "typedefs"
+    "disable": [
+      "undefined-global",
+      "lowercase-global",
+      "unused-local",
+      "redefined-local"
     ]
+  },
+  "runtime": {
+    "version": "Lua 5.1",
+    "path": ["?.lua", "?/init.lua", "src/?.lua", "src/?/init.lua"]
+  },
+  "format": {
+    "enable": false
+  },
+  "hint": {
+    "enable": true,
+    "paramType": true,
+    "setType": true
+  },
+  "telemetry": {
+    "enable": false
+  }
 }
+
