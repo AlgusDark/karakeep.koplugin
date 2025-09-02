@@ -1,14 +1,9 @@
 local BookList = require('ui/widget/booklist')
-local Cache = require('cache')
 local InfoMessage = require('ui/widget/infomessage')
 local TitleBar = require('ui/widget/titlebar')
 local UIManager = require('ui/uimanager')
 local _ = require('gettext')
 
--- Cache for API responses
-local BrowserCache = Cache:new({
-    slots = 20,
-})
 
 ---@class BrowserOptions : BookListOptions
 ---@field ui table UI manager reference
@@ -17,7 +12,6 @@ local BrowserCache = Cache:new({
 
 ---@class Browser : BookList
 ---@field ui UI UI manager reference
----@field cache Cache Cache instance for API responses
 ---@field close_callback? fun() Callback when browser is closed
 ---@field new fun(self: Browser, opts: BrowserOptions): Browser Override new to return Browser
 ---@field extend fun(self: Browser, o: table): Browser Override extend to return Browser
@@ -32,7 +26,6 @@ local Browser = BookList:extend({
 
 ---Initialize Browser instance
 function Browser:init()
-    self.cache = BrowserCache
     self.api_client = self.ui.karakeep_api
 
     -- Initialize navigation state

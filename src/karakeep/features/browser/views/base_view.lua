@@ -7,6 +7,13 @@ local logger = require('logger')
 ---@field browser Browser Browser instance for navigation
 ---@field api_client KarakeepAPI API client for data fetching
 
+---@class MenuItem
+---@field text string Display text for the menu item
+---@field is_file? boolean Whether this is a file item (for bookmarks)
+---@field is_dir? boolean Whether this is a directory item (for lists)
+---@field callback function Action when item is tapped
+---@field hold_callback? function Action when item is held
+
 ---@class BaseView
 ---@field browser Browser Browser instance for navigation
 ---@field api_client KarakeepAPI API client for data fetching
@@ -98,17 +105,17 @@ function BaseView:handleApiCall(api_call, loading_message)
     return result, nil
 end
 
----Transform bookmark data into menu item format
+---Transform bookmark data into menu item format  
 ---@param bookmark BookmarkResponse Bookmark data from API
----@return table Menu item for the bookmark
+---@return MenuItem Menu item for the bookmark
 function BaseView:transformBookmark(bookmark)
     local title = bookmark.title
     if not title or title == '' then
-        if bookmark.content.type == 'link' and bookmark.content.url then
-            title = bookmark.content.url
-        elseif bookmark.content.type == 'text' then
+        if bookmark.content and bookmark.content.type == 'link' then
+            title = bookmark.content.title or bookmark.content.url
+        elseif bookmark.content and bookmark.content.type == 'text' then
             title = _('Text note')
-        elseif bookmark.content.type == 'asset' then
+        elseif bookmark.content and bookmark.content.type == 'asset' then
             title = bookmark.content.fileName or (_('Asset: ') .. bookmark.content.assetType)
         else
             title = _('Untitled bookmark')
@@ -132,7 +139,7 @@ end
 
 ---Transform list data into menu item format
 ---@param list ListResponse List data from API
----@return table Menu item for the list
+---@return MenuItem Menu item for the list
 function BaseView:transformList(list)
     return {
         text = list.name,

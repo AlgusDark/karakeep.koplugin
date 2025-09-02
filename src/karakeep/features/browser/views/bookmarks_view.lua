@@ -5,8 +5,9 @@ local _ = require('gettext')
 local BookmarksView = BaseView:extend({})
 
 ---Load view data with API call to get all bookmarks
----@return table|nil View data with title and items, or nil on error
+---@return {title: string, items: MenuItem[]}|nil View data with title and items, or nil on error
 function BookmarksView:load()
+    ---@type BookmarksListResponse|nil, Error|nil
     local result, error = self:handleApiCall(function()
         return self.api_client:getAllBookmarks({
             query = {
