@@ -67,7 +67,7 @@ end
 local function buildErrorMessage(code, response_text)
     local api_error_message = nil
     if response_text and response_text ~= '' then
-        local success, error_data = pcall(JSON.decode, response_text)
+        local success, error_data = pcall(JSON.decode, response_text, JSON.decode.simple)
         if success and error_data then
             api_error_message = error_data
         end
@@ -139,12 +139,12 @@ function HttpClient:makeRequest(method, endpoint, config)
         ['User-Agent'] = 'KOReader/1.0',
     }
 
-    local sink = {}
+    local response_body = {}
     local request = {
         url = url,
         method = method,
         headers = headers,
-        sink = ltn12.sink.table(sink),
+        sink = socketutil.table_sink(response_body),
     }
 
     if config.body then
@@ -174,7 +174,7 @@ function HttpClient:makeRequest(method, endpoint, config)
         return nil, Error.new(error_message)
     end
 
-    local response_text = table.concat(sink)
+    local response_text = table.concat(response_body)
 
     if code == 200 or code == 201 or code == 204 then
         if dialogs and dialogs.success and dialogs.success.text then
@@ -182,7 +182,7 @@ function HttpClient:makeRequest(method, endpoint, config)
         end
 
         if response_text and response_text ~= '' then
-            local success, data = pcall(JSON.decode, response_text)
+            local success, data = pcall(JSON.decode, response_text, JSON.decode.simple)
             if success then
                 return data, nil
             else
