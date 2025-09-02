@@ -11,6 +11,12 @@ return function(karakeep)
         sorting_hint = 'tools',
         sub_item_table = {
             {
+                text = _('Browse Bookmarks'),
+                callback = function()
+                    karakeep:openBrowser()
+                end,
+            },
+            {
                 text = _('Settings'),
                 separator = true,
                 sub_item_table = {

@@ -13,6 +13,8 @@ local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local QueueManager = require('karakeep/features/queue/queue_manager')
 local SyncService = require('karakeep/features/sync/sync_service')
 local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
+local Browser = require('karakeep/features/browser/browser')
+local UIManager = require('ui/uimanager')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
@@ -31,6 +33,7 @@ local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 ---@field repo_name string GitHub repository name (from _meta.lua)
 ---@field settings Settings Plugin settings instance
 ---@field data_dir string Full path to karakeep data directory
+---@field browser? Browser Browser instance when active
 local Karakeep = WidgetContainer:extend({
     name = 'Karakeep',
     is_doc_only = false,
@@ -101,6 +104,30 @@ end
 
 function Karakeep:addToMainMenu(menu_items)
     menu_items.karakeep = getMainMenu(self)
+end
+
+---Open Karakeep browser
+function Karakeep:openBrowser()
+    if self.browser then
+        -- Browser is already open, just bring it to front
+        UIManager:show(self.browser)
+        return
+    end
+
+    self.browser = Browser:new({
+        ui = self.ui,
+        title = _('Karakeep'),
+        close_callback = function()
+            self.browser = nil
+        end,
+    })
+
+    UIManager:show(self.browser)
+end
+
+function Karakeep:onCloseBrowser()
+    UIManager:close(self.browser)
+    self.browser = nil
 end
 
 ---Handle FlushSettings event from UIManager

@@ -50,6 +50,7 @@ Handles item selection, pagination, and hierarchical navigation.
 ---@field onMenuChoice fun(self: Menu, item: MenuItem) Handle item selection
 ---@field onMenuHold fun(self: Menu, item: MenuItem) Handle item hold
 ---@field onReturn? fun() Handle return/back navigation
+---@field onMenuSelect fun(self: Menu, item: MenuItem): boolean Handle menu item selection
 ---@field switchItemTable fun(self: Menu, title: string, item_table: MenuItem[], item_number?: number, item_match?: table, subtitle?: string) Switch to new item table
 ---@field updateItems fun(self: Menu, select_number?: number, no_recalculate_dimen?: boolean) Update displayed items
 ---@field onClose fun(self: Menu): boolean Handle menu close
