@@ -43,11 +43,15 @@ end
 ---@param message? string Custom loading message (optional)
 ---@return table loading_notification The notification instance for manual closing
 function BaseView:showLoading(message)
-    message = message or _('Loading...')
-    return UIManager:show(InfoMessage:new({
-        text = message,
-        timeout = nil, -- Manual close required
-    }))
+    local infoMessage = InfoMessage:new({
+        text = message or _('Loading...'),
+        timeout = nil,
+    })
+
+    UIManager:show(infoMessage)
+    UIManager:forceRePaint()
+
+    return infoMessage
 end
 
 ---Show error message to user
@@ -89,9 +93,7 @@ function BaseView:handleApiCall(api_call, loading_message)
 
     local result, error = api_call()
 
-    if loading_notification then
-        UIManager:close(loading_notification)
-    end
+    UIManager:close(loading_notification)
 
     if error then
         logger.warn('[BaseView] API call failed:', error.message)
@@ -179,7 +181,7 @@ function BaseView:transformList(list)
         text = list.name,
         is_dir = true,
         callback = function()
-            self.browser:navigate('list', { list_id = list.id })
+            self.browser:navigate('list', { id = list.id, name = list.name })
         end,
         hold_callback = function()
             UIManager:show(InfoMessage:new({

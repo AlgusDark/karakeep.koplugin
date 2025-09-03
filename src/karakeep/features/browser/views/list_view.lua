@@ -6,26 +6,14 @@ local T = require('ffi/util').template
 local ListView = BaseView:extend({})
 
 ---Load view data with API call to get bookmarks in a specific list
----@param params table Parameters containing list_id
+---@param params {id: string, name: string} Parameters containing list_id
 ---@return table|nil View data with title and items, or nil on error
 function ListView:load(params)
-    local list_id = params.list_id
+    local list_id = params.id
+    local list_name = params.name
+
     if not list_id then
         self:showError(_('List ID is required'))
-        return nil
-    end
-
-    -- First get the list details to show the proper title
-    local list_result, list_error = self:handleApiCall(function()
-        return self.api_client:getList(list_id)
-    end, _('Loading list details...'))
-
-    if list_error then
-        return nil
-    end
-
-    if not list_result then
-        self:showError(_('List not found'))
         return nil
     end
 
@@ -55,7 +43,7 @@ function ListView:load(params)
     end
 
     return {
-        title = T(_('List: %1'), list_result.name),
+        title = T(_('List: %1'), list_name),
         items = items,
     }
 end
