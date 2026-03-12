@@ -2,6 +2,9 @@ local EventListener = require('ui/widget/eventlistener')
 
 local HttpClient = require('karakeep/shared/http_client')
 
+local logger = require('logger')
+
+---@diagnostic disable-next-line: undefined-doc-class
 ---@class KarakeepAPI : EventListener
 ---@field server_address string Server address for API calls
 ---@field api_token string API token for authentication
@@ -131,6 +134,18 @@ end
 
 ---@alias BookmarkRequest BookmarkRequestLink | BookmarkRequestText | BookmarkRequestAsset
 
+
+function KarakeepAPI:addTagsToBookmark(bookmark_id, tags)
+    return self.api_client:post('/bookmarks/' .. bookmark_id .. '/tags', tags)
+end
+
+---Get an existing bookmark
+---@param bookmark_id string The bookmark ID to get
+---@return table|nil result, Error|nil error
+function KarakeepAPI:getBookmark(bookmark_id)
+    return self.api_client:get('/bookmarks/' .. bookmark_id)
+end
+
 ---Create a new bookmark
 ---@param config HttpClientOptions<BookmarkRequest, QueryParam[]>
 ---@return table|nil result, Error|nil error
@@ -144,6 +159,10 @@ end
 ---@return table|nil result, Error|nil error
 function KarakeepAPI:updateBookmark(bookmark_id, config)
     return self.api_client:patch('/bookmarks/' .. bookmark_id, config)
+end
+
+function KarakeepAPI:createNewHighligh(data)
+    return self.api_client:post('/highlights', data)
 end
 
 return KarakeepAPI

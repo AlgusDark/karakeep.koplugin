@@ -44,6 +44,45 @@ function KarakeepExporter:new(config)
     return instance
 end
 
+---Get a Bookmark from Karakeep
+---@param id string The id of a bookmark to request from Karakeep
+---@return table|nil result The requested bookmark from Karakeep
+function KarakeepExporter:getBookmark(id)
+    local result, error = self.ui.karakeep_api:getBookmark(id)
+    
+    if error then
+        logger.err('[KarakeepExporter] Failed to get bookmark with id: ' .. id, error.message)
+        return nil
+    end
+
+    if not result or not result.id then
+        logger.err('[KarakeepExporter] Failed to get bookmark with id: ' .. id)
+        return nil
+    end
+
+    logger.dbg('[KarakeepExporter] Got bookmark from Server with ID:', result.id)
+    return result
+end
+
+---Add tags to a bookmark in Karakeep
+---@param bookmark_id string The bookmark ID to attach the tags to
+---@param tags table[] A list of tag objects, e.g. {{ tagName: string }}
+---@return table|nil result The created bookmark data if successful
+function KarakeepExporter:addTagsToBookmark(bookmark_id, tags)
+    logger.dbg("[KarakeepExporter] Creating tag")
+    local result, error = self.ui.karakeep_api:addTagsToBookmark(bookmark_id, {
+        body = {
+            tags = tags
+        }
+    })
+    if error then
+        logger.err('[KarakeepExporter] Failed to attach tags to book', error.message)
+    end
+
+    logger.dbg('[KarakeepExporter] Attached tags to Book')
+    return result
+end
+
 ---Create a new bookmark in Karakeep
 ---@param params {title: string, content: string} The bookmark data
 ---@return table|nil result The created bookmark data if successful
@@ -52,6 +91,7 @@ function KarakeepExporter:createBookmark(params)
         body = {
             type = 'text',
             title = params.title,
+            note = params.title,
             text = params.content,
         },
     })
@@ -73,12 +113,13 @@ function KarakeepExporter:createBookmark(params)
 end
 
 ---Update an existing bookmark in Karakeep
----@param params {id: string, content: string} The bookmark update data
+---@param params {id: string, content: string, title: string} The bookmark update data
 ---@return table|nil result The updated bookmark data if successful
 function KarakeepExporter:updateBookmark(params)
     local result, error = self.ui.karakeep_api:updateBookmark(params.id, {
         body = {
             type = 'text',
+            note = params.title,
             text = params.content,
         },
     })
@@ -103,44 +144,70 @@ function KarakeepExporter:export(book_notes)
     local error_count = 0
 
     for _, book in ipairs(book_notes) do
-        local bookmark_data = KarakeepMetadata.getBookmark(book.file)
+        logger.dbg('[KarakeepExporter] Next Book:')
 
-        -- Generate markdown content inline
-        local md = require('template/md')
-        -- selene: allow(undefined_variable)
-        local plugin_settings = G_reader_settings:readSetting('exporter') or {}
-        local markdown_settings = plugin_settings.markdown or {}
-        local markdown_table = md.prepareBookContent(book, markdown_settings)
-        local markdown_content = table.concat(markdown_table, '\n')
+        if(book.author and book.title) then
+            for key, wrapper in pairs(book) do
+                if(type(key) == "number" and wrapper[1]) then
+                    local highlight = wrapper[1]
+                    if(highlight and highlight.text and highlight.page and highlight.time) then
+                        local bookmark_data = KarakeepMetadata.getBookmark(highlight.pn_xp, book.file)
 
-        if bookmark_data and bookmark_data.id then
-            local result = self:updateBookmark({
-                id = bookmark_data.id,
-                content = markdown_content,
-            })
-            if result then
-                if result.modifiedAt then
-                    bookmark_data.modifiedAt = result.modifiedAt
-                    KarakeepMetadata.saveBookmark(book.file, bookmark_data)
+                        local markdown_content = book.title .. " by " .. book.author .. " (page: " .. highlight.page .. ")"
+
+                        --- Got all information, creating bookmarks now!
+
+                        if bookmark_data and bookmark_data.id and self:getBookmark(bookmark_data.id) then
+                            logger.dbg("[KarakeepExporter] Updating existing highlight")
+                            local result = self:updateBookmark({
+                                id = bookmark_data.id,
+                                title = highlight.text,
+                                content = markdown_content,
+                            })
+                            if result then
+                                local tagResult = self:addTagsToBookmark(bookmark_data.id, {
+                                    {tagName = "KoReader"},
+                                    {tagName = book.author},
+                                    {tagName = book.title}
+                                })
+
+                                if result.modifiedAt then
+                                    bookmark_data.modifiedAt = result.modifiedAt
+                                    KarakeepMetadata.saveBookmark(book.file, bookmark_data)
+                                end
+                                success_count = success_count + 1
+                            else
+                                error_count = error_count + 1
+                            end
+                        else
+                            logger.dbg("[KarakeepExporter] Creating new highlight...")
+                            local result = self:createBookmark({
+                                title = highlight.text,
+                                content = markdown_content,
+                            })
+                            if result then
+                                if result.id then
+                                local tagResult = self:addTagsToBookmark(result.id, {
+                                    {tagName = "KoReader"},
+                                    {tagName = book.author},
+                                    {tagName = book.title}
+                                })
+                                end
+
+                                KarakeepMetadata.saveBookmark(book.file, {
+                                    id = result.id,
+                                    createdAt = result.createdAt,
+                                    modifiedAt = result.modifiedAt,
+                                    pointer = highlight.pn_xp
+                                })
+                                logger.info("[KarakeepExporter] Created new bookmark with id: " .. result.id)
+                                success_count = success_count + 1
+                            else
+                                error_count = error_count + 1
+                            end
+                        end
+                    end
                 end
-                success_count = success_count + 1
-            else
-                error_count = error_count + 1
-            end
-        else
-            local result = self:createBookmark({
-                title = book.title,
-                content = markdown_content,
-            })
-            if result then
-                KarakeepMetadata.saveBookmark(book.file, {
-                    id = result.id,
-                    createdAt = result.createdAt,
-                    modifiedAt = result.modifiedAt,
-                })
-                success_count = success_count + 1
-            else
-                error_count = error_count + 1
             end
         end
     end
