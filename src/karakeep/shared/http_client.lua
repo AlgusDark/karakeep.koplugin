@@ -69,8 +69,16 @@ local function buildErrorMessage(code, response_text)
     if response_text and response_text ~= '' then
         local success, error_data = pcall(JSON.decode, response_text)
         if success and error_data then
-            api_error_message = error_data
+            if type(error_data) == 'table' then
+                api_error_message = error_data.message or error_data.error
+            else
+                api_error_message = error_data
+            end
+            if type(api_error_message) ~= 'string' then
+                api_error_message = nil
+            end
         end
+        logger.dbg('[HttpClient] Response body:', response_text)
     end
 
     if code == 400 then

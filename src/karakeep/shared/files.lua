@@ -41,7 +41,7 @@ function Files.writeFile(file_path, content)
     return true, nil
 end
 
----Create directory if it doesn't exist
+---Create a single directory if it doesn't exist
 ---@param dir_path string Directory path to create
 ---@return boolean|nil success, Error|nil error
 function Files.createDirectory(dir_path)
@@ -50,6 +50,29 @@ function Files.createDirectory(dir_path)
         if not success then
             return nil, Error.new('Failed to create directory')
         end
+    end
+    return true, nil
+end
+
+---Create a directory and all parent directories if they don't exist
+---@param dir_path string Directory path to create
+---@return boolean|nil success, Error|nil error
+function Files.createDirectories(dir_path)
+    if lfs.attributes(dir_path, 'mode') then
+        return true, nil
+    end
+
+    local parent = dir_path:match('^(.+)/[^/]+$')
+    if parent then
+        local ok, err = Files.createDirectories(parent)
+        if not ok then
+            return nil, err
+        end
+    end
+
+    local success = lfs.mkdir(dir_path)
+    if not success then
+        return nil, Error.new('Failed to create directory: ' .. dir_path)
     end
     return true, nil
 end

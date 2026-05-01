@@ -11,8 +11,12 @@ local Error = {}
 ---@param message string Human-readable error message
 ---@return Error # Error object with message property
 function Error.new(message)
+    message = message or _('Unknown error occurred')
+    if type(message) ~= 'string' then
+        message = tostring(message)
+    end
     return {
-        message = message or _('Unknown error occurred'),
+        message = message,
     }
 end
 

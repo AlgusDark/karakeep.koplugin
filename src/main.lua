@@ -13,6 +13,7 @@ local KarakeepBookmark = require('karakeep/domains/karakeep_bookmark')
 local QueueManager = require('karakeep/features/queue/queue_manager')
 local SyncService = require('karakeep/features/sync/sync_service')
 local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
+local BookmarksToFolder = require('karakeep/features/sync/bookmarks_to_folder')
 
 ---Augment UI interface with registered Karakeep modules
 ---@class UI : WidgetContainer
@@ -20,6 +21,7 @@ local KarakeepExporter = require('karakeep/features/exporter/karakeep_exporter')
 ---@field karakeep_bookmark KarakeepBookmark
 ---@field karakeep_link KarakeepReaderLink
 ---@field karakeep_queue_manager QueueManager
+---@field karakeep_bookmarks_to_folder BookmarksToFolder
 
 ---@class Karakeep : WidgetContainer
 ---@field name string Plugin internal name (from _meta.lua)
@@ -52,6 +54,7 @@ function Karakeep:init()
             server_address = '',
             api_token = '',
             include_beta_releases = false,
+            export_dir = '',
         },
     })
 
@@ -91,6 +94,14 @@ function Karakeep:init()
         'karakeep_sync_service',
         SyncService:new({
             ui = self.ui,
+        })
+    )
+
+    self.ui:registerModule(
+        'karakeep_bookmarks_to_folder',
+        BookmarksToFolder:new({
+            ui = self.ui,
+            settings = self.settings,
         })
     )
 

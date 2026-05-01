@@ -138,6 +138,13 @@ function KarakeepAPI:createNewBookmark(config)
     return self.api_client:post('/bookmarks', config)
 end
 
+---List bookmarks with optional filtering and pagination
+---@param config HttpClientOptions<nil, QueryParam[]>
+---@return table|nil result, Error|nil error
+function KarakeepAPI:listBookmarks(config)
+    return self.api_client:get('/bookmarks', config)
+end
+
 ---Update an existing bookmark
 ---@param bookmark_id string The bookmark ID to update
 ---@param config HttpClientOptions<BookmarkRequest, QueryParam[]>
