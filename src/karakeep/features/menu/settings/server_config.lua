@@ -9,6 +9,7 @@ local EventManager = require('karakeep/shared/event_manager')
 local function showDialog(settings)
     local server_address = settings.server_address
     local api_token = settings.api_token
+    local proxy_address = settings.proxy_address
 
     local settings_dialog
     settings_dialog = MultiInputDialog:new({
@@ -24,6 +25,11 @@ local function showDialog(settings)
                 input_type = 'string',
                 hint = _('API Token'),
                 text_type = 'password',
+            },
+            {
+                text = proxy_address,
+                input_type = 'string',
+                hint = _('Proxy for HTTPS, host:port (optional)'),
             },
         },
         buttons = {

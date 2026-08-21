@@ -35,7 +35,19 @@ This plugin integrates with [Karakeep](https://karakeep.app/), a self-hostable â
 1. In KOReader, go to **Tools > Karakeep**.
 2. Set the **Server address** (e.g. `https://karakeep.example.com`).
 3. Enter your **API token**.
-4. Save and exit.
+4. Optionally set a **proxy** as `host:port` if your Karakeep instance is only
+   reachable through a local HTTP proxy. Leave empty to connect directly.
+5. Save and exit.
+
+### Reaching a Karakeep instance behind a proxy
+
+If Karakeep is only routable through a local HTTP proxy, set the proxy field to
+that address. The common case is Tailscale running in userspace-networking mode
+(the default on e-readers, since kernel TUN triggers wgengine watchdog timeouts),
+where `tailscaled` exposes an HTTP CONNECT proxy on `127.0.0.1:1056` rather than
+creating a TUN interface. Without this, requests to a tailnet-only address fail
+at the socket layer, because LuaSocket has no CONNECT tunnelling and LuaSec
+refuses to combine TLS with a proxy.
 
 ## Usage
 
