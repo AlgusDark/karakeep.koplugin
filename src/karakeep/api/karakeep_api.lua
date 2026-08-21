@@ -6,6 +6,7 @@ local HttpClient = require('karakeep/shared/http_client')
 ---@field server_address string Server address for API calls
 ---@field api_token string API token for authentication
 ---@field api_base string API base URL
+---@field proxy_address string Optional 'host:port' HTTP CONNECT proxy
 ---@field api_client HttpClient Generic HTTP API client
 local KarakeepAPI = EventListener:extend({})
 
@@ -17,6 +18,7 @@ local function createHttpClient(config)
         server_address = config.server_address,
         api_token = config.api_token,
         api_base = config.api_base,
+        proxy_address = config.proxy_address,
     })
 end
 
@@ -26,20 +28,25 @@ function KarakeepAPI:init()
         server_address = self.server_address,
         api_token = self.api_token,
         api_base = self.api_base,
+        proxy_address = self.proxy_address,
     })
 end
 
 ---Handle server configuration change event
----@param args {api_token: string, server_address: string} New server configuration
+---@param args {api_token: string, server_address: string, proxy_address?: string} New server configuration
 function KarakeepAPI:onServerConfigChange(args)
     self.api_token = args.api_token
     self.server_address = args.server_address
+    if args.proxy_address ~= nil then
+        self.proxy_address = args.proxy_address
+    end
 
     -- Recreate HttpClient with new settings
     self.api_client = createHttpClient({
         server_address = self.server_address,
         api_token = self.api_token,
         api_base = self.api_base,
+        proxy_address = self.proxy_address,
     })
 end
 
@@ -162,6 +169,14 @@ end
 ---@field cursor? string Pagination cursor
 ---@field includeContent? boolean Include bookmark content in response (default: true)
 
+---@class SearchBookmarksQueryParams
+---@field q string Full-text search query (required)
+---@field searchMode? 'fts'|'semantic'|'hybrid' Search strategy (default: server-side default)
+---@field sortOrder? 'asc'|'desc'|'relevance' Sort direction (default: 'relevance')
+---@field limit? number Maximum number of bookmarks to return
+---@field cursor? string Pagination cursor
+---@field includeContent? boolean Include bookmark content in response (default: true)
+
 ---@class SingleBookmarkQueryParams
 ---@field includeContent? boolean Include bookmark content in response (default: true)
 
@@ -199,6 +214,13 @@ end
 ---@return BookmarkResponse|nil result, Error|nil error
 function KarakeepAPI:getBookmark(bookmark_id, config)
     return self.api_client:get('/bookmarks/' .. bookmark_id, config)
+end
+
+---Full-text search across bookmark titles, content, descriptions and notes
+---@param config HttpClientOptions<nil, SearchBookmarksQueryParams>
+---@return BookmarksListResponse|nil result, Error|nil error
+function KarakeepAPI:searchBookmarks(config)
+    return self.api_client:get('/bookmarks/search', config)
 end
 
 -- =============================================================================

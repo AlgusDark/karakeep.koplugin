@@ -32,14 +32,22 @@ function ListView:load(params)
         return nil
     end
 
-    if not bookmarks_result or not bookmarks_result.bookmarks then
+    if not bookmarks_result then
         self:showError(_('Invalid response from server'))
         return nil
     end
 
     local items = {}
-    for _, bookmark in ipairs(bookmarks_result.bookmarks) do
+    for _, bookmark in ipairs(bookmarks_result.bookmarks or {}) do
         table.insert(items, self:transformBookmark(bookmark))
+    end
+
+    if #items == 0 then
+        table.insert(items, {
+            text = _('This list is empty'),
+            dim = true,
+            callback = function() end,
+        })
     end
 
     return {

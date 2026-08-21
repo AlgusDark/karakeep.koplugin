@@ -7,7 +7,11 @@ local _ = require('gettext')
 local util = require('util')
 local logger = require('logger')
 
+local DataStorage = require('datastorage')
+local lfs = require('libs/libkoreader-lfs')
+
 local Files = require('karakeep/shared/files')
+local ProxyTunnel = require('karakeep/shared/proxy_tunnel')
 local Notification = require('karakeep/shared/widgets/notification')
 local Error = require('karakeep/shared/error')
 
@@ -20,6 +24,7 @@ local HttpClient = {}
 ---@field server_address string Server address for API calls
 ---@field api_token string API token for authentication
 ---@field api_base string API base URL (defaults to /v1)
+---@field proxy_address? string Optional 'host:port' HTTP CONNECT proxy for HTTPS
 
 ---@class ApiDialogConfig
 ---@field loading? {text?: string, timeout?: number|nil} Loading notification (timeout=nil for manual close)
@@ -39,6 +44,7 @@ function HttpClient:new(config)
     instance.server_address = config.server_address
     instance.api_token = config.api_token
     instance.api_base = config.api_base or '/v1'
+    instance.proxy_address = config.proxy_address or ''
 
     logger.dbg('api_base:', instance.api_base)
 
@@ -146,6 +152,27 @@ function HttpClient:makeRequest(method, endpoint, config)
         headers = headers,
         sink = socketutil.table_sink(response_body),
     }
+
+    -- When the target is only routable through a local HTTP proxy (e.g.
+    -- Tailscale in userspace-networking mode on an e-reader), LuaSocket cannot
+    -- reach it: it has no CONNECT tunnelling, and LuaSec refuses to combine
+    -- TLS with a proxy at all. Supply our own tunnelling `create`.
+    local proxy_host, proxy_port = ProxyTunnel.parseAddress(self.proxy_address)
+    if proxy_host and url:match('^https://') then
+        local ca_bundle = DataStorage:getDataDir() .. '/data/ca-bundle.crt'
+        if lfs.attributes(ca_bundle, 'mode') ~= 'file' then
+            ca_bundle = nil
+        end
+        request.create = ProxyTunnel.createFactory({
+            proxy_host = proxy_host,
+            proxy_port = proxy_port,
+            timeout = socketutil.LARGE_BLOCK_TIMEOUT,
+            cafile = ca_bundle,
+        })
+        logger.dbg('[HttpClient] tunnelling via proxy', proxy_host, proxy_port)
+    elseif self.proxy_address ~= '' and not proxy_host then
+        logger.warn('[HttpClient] ignoring malformed proxy address:', self.proxy_address)
+    end
 
     if config.body then
         local request_body = JSON.encode(config.body)

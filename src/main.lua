@@ -54,6 +54,7 @@ function Karakeep:init()
         defaults = {
             server_address = '',
             api_token = '',
+            proxy_address = '',
             include_beta_releases = false,
         },
     })
@@ -63,6 +64,7 @@ function Karakeep:init()
         KarakeepAPI:new({
             server_address = self.settings.server_address,
             api_token = self.settings.api_token,
+            proxy_address = self.settings.proxy_address,
             api_base = '/api/v1',
         })
     )
