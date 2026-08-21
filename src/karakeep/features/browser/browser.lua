@@ -106,6 +106,7 @@ function Browser:getView(view_name)
         bookmarks = require('karakeep/features/browser/views/bookmarks_view'),
         all_lists = require('karakeep/features/browser/views/all_lists_view'),
         list = require('karakeep/features/browser/views/list_view'),
+        search = require('karakeep/features/browser/views/search_view'),
     }
 
     local view_module = view_modules[view_name]

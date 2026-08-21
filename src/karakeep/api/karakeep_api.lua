@@ -162,6 +162,14 @@ end
 ---@field cursor? string Pagination cursor
 ---@field includeContent? boolean Include bookmark content in response (default: true)
 
+---@class SearchBookmarksQueryParams
+---@field q string Full-text search query (required)
+---@field searchMode? 'fts'|'semantic'|'hybrid' Search strategy (default: server-side default)
+---@field sortOrder? 'asc'|'desc'|'relevance' Sort direction (default: 'relevance')
+---@field limit? number Maximum number of bookmarks to return
+---@field cursor? string Pagination cursor
+---@field includeContent? boolean Include bookmark content in response (default: true)
+
 ---@class SingleBookmarkQueryParams
 ---@field includeContent? boolean Include bookmark content in response (default: true)
 
@@ -199,6 +207,13 @@ end
 ---@return BookmarkResponse|nil result, Error|nil error
 function KarakeepAPI:getBookmark(bookmark_id, config)
     return self.api_client:get('/bookmarks/' .. bookmark_id, config)
+end
+
+---Full-text search across bookmark titles, content, descriptions and notes
+---@param config HttpClientOptions<nil, SearchBookmarksQueryParams>
+---@return BookmarksListResponse|nil result, Error|nil error
+function KarakeepAPI:searchBookmarks(config)
+    return self.api_client:get('/bookmarks/search', config)
 end
 
 -- =============================================================================

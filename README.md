@@ -11,9 +11,11 @@ This plugin integrates with [Karakeep](https://karakeep.app/), a self-hostable â
 - [x] Create Bookmarks
   - [x] Save links
   - [x] Export Highlights 
-- [ ] Browse your bookmarks
-- [ ] Search bookmarks
-- [ ] Download bookmarks for offline access
+- [x] Browse your bookmarks
+  - [x] Browse all bookmarks
+  - [x] Browse by list
+- [x] Search bookmarks
+- [x] Download bookmarks for offline access (EPUB)
 
 ## Prerequisites
 
