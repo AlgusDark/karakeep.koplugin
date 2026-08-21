@@ -1,4 +1,5 @@
 local BookList = require('ui/widget/booklist')
+local NetworkMgr = require('ui/network/manager')
 local InfoMessage = require('ui/widget/infomessage')
 local TitleBar = require('ui/widget/titlebar')
 local UIManager = require('ui/uimanager')
@@ -70,6 +71,16 @@ function Browser:navigate(view_name, params, is_back_navigation)
             text = _('Unknown view: ') .. tostring(view_name),
             timeout = 3,
         }))
+        return
+    end
+
+    -- Every view but the static root hits the API. KOReader turns Wi-Fi off
+    -- aggressively, so without this the first request fails at the socket
+    -- layer and surfaces as an opaque "Network error occurred".
+    if view_name ~= 'init' and not NetworkMgr:isOnline() then
+        NetworkMgr:beforeWifiAction(function()
+            self:navigate(view_name, params, is_back_navigation)
+        end)
         return
     end
 
