@@ -22,14 +22,22 @@ function BookmarksView:load()
         return nil
     end
 
-    if not result or not result.bookmarks then
+    if not result then
         self:showError(_('Invalid response from server'))
         return nil
     end
 
     local items = {}
-    for _, bookmark in ipairs(result.bookmarks) do
+    for _, bookmark in ipairs(result.bookmarks or {}) do
         table.insert(items, self:transformBookmark(bookmark))
+    end
+
+    if #items == 0 then
+        table.insert(items, {
+            text = _('No bookmarks yet'),
+            dim = true,
+            callback = function() end,
+        })
     end
 
     return {

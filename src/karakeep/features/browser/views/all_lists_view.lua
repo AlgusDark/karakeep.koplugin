@@ -15,14 +15,22 @@ function AllListsView:load()
         return nil
     end
 
-    if not result or not result.lists then
+    if not result then
         self:showError(_('Invalid response from server'))
         return nil
     end
 
     local items = {}
-    for _, list in ipairs(result.lists) do
+    for _, list in ipairs(result.lists or {}) do
         table.insert(items, self:transformList(list))
+    end
+
+    if #items == 0 then
+        table.insert(items, {
+            text = _('No lists yet'),
+            dim = true,
+            callback = function() end,
+        })
     end
 
     return {

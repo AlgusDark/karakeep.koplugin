@@ -62,7 +62,16 @@ function Downloader:execute(options)
         return
     end
 
-    local download_dir = data_dir .. '/karakeep/'
+    -- Prefer the user's library folder so downloads appear as books alongside
+    -- everything else (on Kindle that's /mnt/us/documents). Fall back to the
+    -- plugin data dir on devices where no home folder is configured.
+    local download_dir
+    local home_dir = G_reader_settings:readSetting('home_dir')
+    if home_dir and home_dir ~= '' and lfs.attributes(home_dir, 'mode') == 'directory' then
+        download_dir = home_dir .. '/Karakeep/'
+    else
+        download_dir = data_dir .. '/karakeep/'
+    end
 
     -- Ensure download directory exists
     if not lfs.attributes(download_dir, 'mode') then
